@@ -1,4 +1,4 @@
-//*DebugManager.cpp
+// DebugManager.cpp
 
 #include <Arduino.h>
 #include "DebugManager.h"
@@ -23,21 +23,17 @@ void debugInfo(const String &mensagem)
         Serial.println(mensagem);
     }
 }
+
 void debugErroSemLinha(const String &mensagem)
 {
     if (nivelDebugAtual >= DEBUG_ERRO)
-    {
-        Serial.print(mensagem);
-    }
+        Serial.println(mensagem);
 }
 
 void debugInfoSemLinha(const String &mensagem)
 {
     if (nivelDebugAtual >= DEBUG_TUDO)
-    {
-
-        Serial.print(mensagem);
-    }
+        Serial.println(mensagem);
 }
 
 int obterNivelDebugAtual()
@@ -53,29 +49,22 @@ void configurarDebug()
     pinMode(PINO_HABILITA_DEBUG_COMPLETO, INPUT_PULLUP);
 
     if (digitalRead(PINO_HABILITA_DEBUG_COMPLETO) == LOW)
-    {
         nivelDebugAtual = DEBUG_TUDO;
-    }
+
     else
-    {
         nivelDebugAtual = DEBUG_NIVEL_INICIAL;
-    }
 
     debugInfoSemLinha("\n\n\n\n\n\r");
 
-    debugInfo("============================");
-    debugInfo("ESP32 INICIADO");
-    debugInfo("Sistema de debug ativo");
+    debugInfo("=====================================================================");
+    debugInfo("ESP32 Iniciado");
+    debugInfo("Sistema de Debug ativado");
 
     if (nivelDebugAtual == DEBUG_TUDO)
-    {
         Serial.println("[INFO] Debug iniciado em modo completo");
-    }
 
     else if (nivelDebugAtual == DEBUG_ERRO)
-    {
         Serial.println("[INFO] Debug iniciado em apenas erros");
-    }
-    debugInfo("============================");
-}
 
+    debugInfo("=====================================================================");
+}

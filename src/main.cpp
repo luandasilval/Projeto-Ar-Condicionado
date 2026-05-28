@@ -5,15 +5,12 @@
 #include "MqttManager.h"
 #include "DebugManager.h"
 #include <ArduinoJson.h>
-#include <Adafruit_NeoPixel.h>
 
 //*=======constantes==========
 
 const char TOPICO_COMANDO[] = "senai134/esp32/comando";
 
 void tratarMensagemRecebida(const char *topico, const String &mensagem);
-void alterarCorLedRGB(int, int, int);
-void configurarLedRGB();
 void tratarJsonComando(const String &mensagem);
 
 void setup()
