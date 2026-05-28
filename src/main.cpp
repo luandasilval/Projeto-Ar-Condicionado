@@ -5,6 +5,7 @@
 #include "MqttManager.h"
 #include "DebugManager.h"
 #include <ArduinoJson.h>
+#include <FujitsuAC.h>
 
 //*=======constantes==========
 
