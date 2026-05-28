@@ -1,53 +1,35 @@
 //*main.cpp
 
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
-#include <ArduinoJson.h>
-
 #include "WiFiManager.h"
 #include "MqttManager.h"
 #include "DebugManager.h"
+#include <ArduinoJson.h>
+#include <Adafruit_NeoPixel.h>
 
 //*=======constantes==========
-const int PinoLedRGB = 48;
-const int QntLeds = 1;
-const char TOPICO_COMANDO[] = "senai134/Guilherme/esp32/status";
 
-const int pinoLampada = 17;
-
-//*=========instancias========
-Adafruit_NeoPixel ledRGB(
-    QntLeds, PinoLedRGB,
-    NEO_GRB + NEO_KHZ800);
+const char TOPICO_COMANDO[] = "senai134/esp32/comando";
 
 void tratarMensagemRecebida(const char *topico, const String &mensagem);
+void alterarCorLedRGB(int, int, int);
 void configurarLedRGB();
-void alterarCorDoLedRGB(int vermelho, int verde, int azul);
-
 void tratarJsonComando(const String &mensagem);
 
 void setup()
 {
   configurarDebug();
-  conectarWifi();
+  conectarWiFi();
   configurarMQTT();
   registrarCallbackMensagem(tratarMensagemRecebida);
   conectarMQTT();
-  configurarLedRGB();
 }
 
 void loop()
 {
   garantirWiFiConectado();
-  garantirMQTTConectado();
+  garantirMQTTconectado();
   loopMQTT();
-
-  alterarCorDoLedRGB(255, 0, 0);
-  delay(2000);
-  alterarCorDoLedRGB(0, 255, 0);
-  delay(2000);
-  alterarCorDoLedRGB(0, 255, 0);
-  delay(2000);
 }
 
 void tratarMensagemRecebida(const char *topico, const String &mensagem)
@@ -74,33 +56,7 @@ void tratarMensagemRecebida(const char *topico, const String &mensagem)
   debugErro("Tópico não tratado:" + String(topico));
 }
 
-void configurarLedRGB()
-{
-  ledRGB.begin();
-  ledRGB.setBrightness(80);
-  ledRGB.clear();
-  ledRGB.show();
-
-  debugInfo("LED RGB configurado no pino" + String(PinoLedRGB));
-}
-
-void alterarCorDoLedRGB(int vermelho, int verde, int azul)
-{
-  vermelho = constrain(vermelho, 0, 255);
-  verde = constrain(verde, 0, 255);
-  azul = constrain(azul, 0, 255);
-
-  ledRGB.setPixelColor(0, ledRGB.Color(vermelho, verde, azul));
-  ledRGB.show();
-
-  debugInfo("Cor aplicada");
-  debugInfo("R: " + String(vermelho));
-  debugInfo("R: " + String(verde));
-  debugInfo("R: " + String(azul));
-}
-
 void tratarJsonComando(const String &mensagem)
-
 {
   JsonDocument doc;
 
@@ -133,4 +89,3 @@ void tratarJsonComando(const String &mensagem)
     }
   }
 }
-

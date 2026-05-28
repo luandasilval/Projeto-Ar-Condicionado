@@ -1,46 +1,49 @@
+// WiFiManager.cpp
 #include <Arduino.h>
-#include <WiFiManager.h>
+#include "WiFiManager.h"
 #include "secrets.h"
 #include <WiFi.h>
+#include "DebugManager.h"
+#include <WiFiClientSecure.h>
 
-void conectarWifi()
+void conectarWiFi()
 {
-  Serial.println("==================");
-  Serial.println("iniciando conexao WiFi...");
-  Serial.println("==================");
+  debugInfo("==============================");
+  debugInfo("Iniciando conexão WiFi...");
+  debugInfo("==============================");
 
   // Configura o ESP32 como station, ou seja
-  // ele vai se conectar a um roteador existente.
-
+  // ele vai se conectar a um roteador existente
   WiFi.mode(WIFI_STA);
 
   WiFi.begin(WIFI_SSID, WIFI_SENHA);
 
-  Serial.print("conectando");
+  debugInfo("Conectando");
 
   int tentativas = 0;
   const int maxTentativa = 30;
 
   while (WiFi.status() != WL_CONNECTED && tentativas < maxTentativa)
   {
-    Serial.print(".");
+    debugInfoSemLinha(".");
     delay(500);
     tentativas++;
   }
-  Serial.println();
+
+  debugInfoSemLinha("\n\r");
 
   if (WiFi.status() == WL_CONNECTED)
-
   {
-    Serial.println("WiFi conectado com sucesso!");
-    Serial.print("Endereço IP: ");
-    Serial.println(WiFi.localIP());
+    debugInfo("WiFi conectado com sucesso");
+    debugInfoSemLinha("Endereço IP:");
+    debugInfoSemLinha(WiFi.localIP().toString());
+    debugInfoSemLinha("\n\r");
   }
 
   else
   {
-    Serial.println("Falha ao conectar ao WiFi.");
-    Serial.println("Verifique o SSID, senha e sinal de rede.");
+    debugErro("Falha ao conectar ao WiFi.");
+    debugErro("Verifique o SSID, senha e sinal de rede.");
   }
 }
 
@@ -48,17 +51,17 @@ void garantirWiFiConectado()
 {
   if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("WiFi desconectado. Tentando reconectar...");
-    conectarWifi();
+    debugInfo("WiFi desconectado. Tentando reconectar...");
+    conectarWiFi();
   }
 
   if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("Não foi possivel reconectar ao WiFi.");
+    debugErro("Não foi possível reconectar ao WiFi");
   }
 }
 
 bool wifiEstaConectado()
 {
-    return WiFi.status() == WL_CONNECTED;
+  return WiFi.status() == WL_CONNECTED;
 }

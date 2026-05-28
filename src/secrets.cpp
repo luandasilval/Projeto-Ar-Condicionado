@@ -1,22 +1,27 @@
 
 #include "secrets.h"
 #include <Arduino.h>
-// Configurações do WiFi
+
+//==============================
+//            WiFi
+//==============================
 
 const char *WIFI_SSID = "SALA 09";
+
 const char *WIFI_SENHA = "info@134";
 
 //==============================
 //            MQTT
 //==============================
 
+const char *MQTT_BROKER = "107e15e20836472e81716949f0efe4fa.s1.eu.hivemq.cloud";
 
-const char *MQTT_BROKER = "49a73c674e834f69b004fd6e161c067e.s1.eu.hivemq.cloud";
 const int MQTT_PORTA = 8883;
 
-const char *MQTT_CLIENT_ID = "esp32_Guilherme_Fellipe";
+const char *MQTT_CLIENT_ID = "esp32_grupo5";
 
-const char *MQTT_USUARIO = "GugaFellipe";
+const char *MQTT_USUARIO = "diogo";
+
 const char *MQTT_SENHA = "Senai@134";
 
 const bool MQTT_TLS = true;
@@ -55,12 +60,16 @@ emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 -----END CERTIFICATE-----
 )EOF";
 
-const bool USAR_AWS_IOT = true;
+// =============================
+//            AWS
+// =============================
 
-const char* AWS_IOT_ENDPOINT = "";
+const bool USAR_AWS_IOT = true; //! ISSO NÃO É NOVO, EU ARRASTEI LÁ DE CIMA!
 
-const char AWS_CERT_CA[] PROGMEM = R"EOF(
------BEGIN CERTIFICATE-----
+const char *AWS_IOT_ENDPOINT = "a2j49cwkf2ucnt-ats.iot.us-east-1.amazonaws.com"; // ENDEREÇO DO BROKER IOT CORE
+
+const char AWS_CERTIFICADO_CA[] PROGMEM = R"EOF(
+ -----BEGIN CERTIFICATE-----
 MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
 ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
 b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL
@@ -80,80 +89,82 @@ o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU
 5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy
 rqXRfboQnoZsG4q5WTP468SQvvG5
 -----END CERTIFICATE-----
-)EOF";
+ )EOF";
 
-const char AWS_CERT_CRT[] PROGMEM = R"CRT(
------BEGIN CERTIFICATE-----
-MIIDWTCCAkGgAwIBAgIUeKMTMyc0OS89dvN7sJBB99AJ+nowDQYJKoZIhvcNAQEL
+const char AWS_CERTIFICADO_CRT[] PROGMEM = R"CRT(
+ -----BEGIN CERTIFICATE-----
+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
-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
+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
 -----END CERTIFICATE-----
+ )CRT";
 
-)CRT";
-
-const char AWS_CERT_PRIVATE[] PROGMEM = R"KEY(
------BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAyfKnVjaXiZyw1rKid1HwEefL6g6JtKC+af2ApprKbSl58Soo
-ARYbBR1M/zzXScSvraXFiG8EXjhoAlY4GYUuw2Mm7Ic8ip4lNhjol898EUh7QA8u
-aTLzqKXl1kClq/5Q4o0qnhf6gXfQOm4WjG0/gus7CnxtwHtEshE2HRYExA2gnXqt
-bc+yO+M8XtxQJd/khP3WCaxZUHa+M3ounhe/7CR3tc32nCrg4AMmRCAGcOqNw3sl
-RDTrid39xQ9q3rG1JMRGuiTIOYsHr4Jm9mrBHhrSGOvKloKLFiDXqbr4N/a+39nj
-wEJQhN5Bv972eZYhY/I/wg2EAZo+5MphfKtftwIDAQABAoIBAEmETqqyAQSVyELA
-kSiC6bR6/97bIAJjqi4HnTgJjbujp8LFp/6NP5TjD86zJWSzd4jtmjWKxLpQKnz/
-SjjwJQ/4Holoyf9khwNkmff6Dp50FnpBjJG7fLxeeIdAzY8JbAStg2A+NnG/XkyH
-GypP8xkD7WBp38J8nYt9fIemJmIANmyvfyW1XU494kqKWgiQE0egrdW5tVLrcyhE
-+YDyEHU9M+MSKyizXDVEu/pVNti6xKAVxm2+OPUCX7JIFWPVIu4PR9muhxZPyzQq
-PJ+xBQaEnO+j8sshtj7vFKMc30kXQP81QV8uQjJbSwHCsED/H5Ci3DthMb/mDuIy
-uEGfZHECgYEA6DeFXmdM0bGrgWwYPYY9B5AvJo70IYFuioFXaPWLnU5v5zOlVTE9
-UPPFtswkHRjo5Su9V41A0Rh0bpuohBmWLWNUta1XpKyasTjQeAUbOilEV0M1lNM1
-qePdLx7bkV3RS49iclary1wL/GUut2eGGZAl3IaX+/Ym94MrpPmn6v0CgYEA3qGC
-7VM/cB0USygx9v6Nz+7dAViaRQWC7r80KEpy1wTTZA+q2WX3DzJ4LizLuG+z6jAP
-+DYT0GnHlzlI8kYJEPXA921C55/V/VxkBiRY2s6I+JbozwrSdI6t+jJlpzZFBIKC
-Ya1oELWQRA4qDg8AH1m0xaAMuodzNMBDp2mhNcMCgYEApBRO7VRqSCSU/X7GZfqK
-9uQfHMyXnXEaDU202JnfS4hXs3KfmOGQ5LlKc44s2k52iS9tuwY4zUXNRzY/TQ/T
-OEDeYvyXV+kJ6L0vOA7LnT35Zvs7SewvF9rEt33DQSScNRqcQhQRkUB5y54m8zp3
-22oqBncnvsW/5NXPKeOpjXUCgYB5LAMs1MCUbt9awLfhLU9WOzYCw4zDwGoxM9RZ
-kZvLuA6uSXC9/qdnmBqdVzhSXEnaTuqCODy0lL5TapRvePr6RigPA2ME2pQH4D94
-sFPEU+FtHAX+mm9NjVLX+JInXnxWJgp8y3r2jTvGLsdo+3Ufmx2u6pvC8nIb5gFs
-nytlLQKBgQDRL/cHhlgpx9mLR43FZkfA90aBIn6nCmD5xVB7YwQ8sD1koyzGzJjh
-xQPVvcgSik4i66u/TAu+BP/yhdWfxFcyUkXtwhxCZFcLwxJCXuN0W+sOb5AceinK
-/PJ4zWzzZR4s5QP/vfyQLVOGwQ1/pm+INGgOscTc7YP4ODnuHu/TFQ==
+const char AWS_CERTIFICADO_PRIVATE[] PROGMEM = R"KEY(
+ -----BEGIN RSA PRIVATE KEY-----
+MIIEogIBAAKCAQEAqYQmJm17Um031Dt2Mv3fAwzrqK4HCTbozTK+VeGzDz+12dlq
+FbXml60BHj6BTXYr5oTAPd9Pdh4uqNpROgty1zxDyAGGpd8Bfc3MqCIsj8lW29CY
+DUPXlLqTJnohjRN8D0T/3mw39H6nV39z0E08Blv95+gneNK9XjaT5UqW7rfCHMTV
+h3wwC8UiSXCgRMviEOlyNBurbJU77SrlWfayK5bCcrXxbP2Q/gBE2JwzzSRx2AdA
++NqN5GYTCWUiwesLBLoj/3UB5IUsX0s3RwYeKMGtt/F2pZix5UtIP8yRQh6nt1D8
+Ae5pEN1WRTB6lHmu2VNDGnd0WJtqfi0+jE0SswIDAQABAoIBAD/KQOj5Dg1ImFe/
+QI2Tx1ZIiG3jfzZSeWyuib2bv1wfp3khPbCJ0QqGygLtlo7lx0Np9UXTQP28Aeb8
+sNBc+oxQW1lqaZcFwnPq+/bRVV+Obqctaeqj+v4276TtFK8YA/ljB75VjwDsoGBm
+z9g1GD90YqngTOpEs4o+k40XcpDF7PPp5EnmSJDPl1q7yHQg4l6e1BWVEoF2qitk
+BpR5osh8247f6KI2Hx6rgEZ9JzQXgjU5UU0phcIHCb5B0kbBlNtI3ixnkNNBZMuW
+y3l88TnK3RjSYulKKxkM2thUmRicNBbr/M1ZGHOAyf41odfXG2l0fY/zzJC9ynf4
+RX4hJMECgYEA0vxChPrBdhH6l5CbW8fGYT6Ats/SW25TMJ+CeR3orq9zj+mumDvM
+MZuEuXz/hxvuU7RUtCY958pOUBLble3o7AJUScB/bNiRhCRuHU7W4b619cL8kr6Y
+x/cM8K6dEzzwhnP9mHgHguDFXWNYp3WVwkbgHIFSfIAJqlEZiKz6E5ECgYEAza7l
+1tpOXyLqnYxvV0xoJx7BJPnwKklGYw7ldaJMgs8UhOVLctSSVPmybQF+7X6BpFmD
+ms937zR4rMGkwwc/Q+8Cn0BqTojtyAZtK2fPdaTRfxNq+tNT/ZQPQganvn2Jgt44
+bG5f1Q3YrZf1rZHvqWJ5DpgiPj1meQ1uFlfVWAMCgYBjriDzWNFcKiRdxUlRNHJq
+cTA4rrkwz0/ocgQfmtza4zPS81G0xNO1QEeVpxPGzpBr5Y/7SPIId9FGDZLHJA7e
+qj8OVS8eyrb9WoTXve7R2tt3EDdqUTg3iWYItEar1yfALj7K8TKDSBSXCZ/SBkDJ
+99hcP1EsVwW5/PT2WNsRsQKBgHz0329rCyfjJ5P1iIMJyVDS71ZOfejCwX9WwnJ3
+2nGx6u5d+ztVB12WoR52RS11qL83HqwDlQJ+5z1VG4rcsUPNRdOIJ810hLj7poEz
+PSdkrV29Z0Xg82rf83ESaABjdhJKfQ7q80+VbOjxo/EB8w794zvJkywq00GBtjre
+u58PAoGACItEkHNNnhKezUdL2kOyRwmWprX3JShnLbmz45H0Pwv3ytcpEnMBrzYT
+kfaZa/sptdlTBK5tHgu7D12qs4xHC24COe+rne5LnafdZPL4bhYckVt6/+X5sfT6
+Z5W6rHJ1sRoYHkClmvZnauru6+QRFnATBSzbJjnhIhlGtOAKo1o=
 -----END RSA PRIVATE KEY-----
-
-)KEY";
+ )KEY";
 
 const int AWS_IOT_PORT = 8883;
 
-const char* AWS_IOT_CLIENT_ID = "espGuilherme12345";
+const char *AWS_IOT_CLIENT_ID = "esp32Diogo12341234";
+
+// =============================
+//            TOPICOS
+// =============================
 
 const char *TOPICOS_PUBLICAR[] =
     {
-        "senai134/Guilherme/esp32/status",
-        "senai134/Guilherme/esp32/log",
-        "senai134/Guilherme/resposta"};
+        "senai134/grupo5/esp32/status",
+        "senai134/grupo5/esp32/log",
+        "senai134/grupo5/resposta"};
 
 const int TOTAL_TOPICOS_PUBLICAR = 3;
 
 const char *TOPICOS_RECEBER[] =
     {
-        "senai134/Guilherme/esp32/comando",
-        "senai134/Guilherme/esp32/config",
-        "senai134/Guilherme/esp32/display"};
+        "senai134/grupo5/esp32/comando",
+        "senai134/grupo5/esp32/config",
+        "senai134/grupo5/esp32/display"};
 
 const int TOTAL_TOPICOS_RECEBER = 3;
 

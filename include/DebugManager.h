@@ -1,5 +1,7 @@
+// DebugManager.h
+
 #ifndef DEBUG_MANAGER_H
-#define  DEBUG_MANAGER_H
+#define DEBUG_MANAGER_H
 
 #include <Arduino.h>
 
@@ -9,15 +11,12 @@
 
 void configurarDebug();
 
-void debugErro (const String& mensagem );
-void debugInfo (const String& mensagem );
+void debugErro(const String &mensagem);
+void debugInfo(const String &mensagem);
 
-void debugErroSemLinha(const String& mensagem );
-void debugInfoSemLinha (const String& mensagem );
+void debugErroSemLinha(const String &mensagem);
+void debugInfoSemLinha(const String &mensagem);
 
-int obterNivelDebugAtual ();
-
-void ligarLampada();
-
+int obterNivelDebugAtual();
 
 #endif
