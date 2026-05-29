@@ -1,11 +1,14 @@
 //*main.cpp
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+#include <ir_Fujitsu.h>
+
 #include "WiFiManager.h"
 #include "MqttManager.h"
 #include "DebugManager.h"
-#include <ArduinoJson.h>
-#include <FujitsuAC.h>
 
 //*=======constantes==========
 
