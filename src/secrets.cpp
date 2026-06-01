@@ -14,17 +14,17 @@ const char *WIFI_SENHA = "info@134";
 //            MQTT
 //==============================
 
-const char *MQTT_BROKER = "107e15e20836472e81716949f0efe4fa.s1.eu.hivemq.cloud";
+const char *MQTT_BROKER = "broker.hivemq.com";
 
-const int MQTT_PORTA = 8883;
+const int MQTT_PORTA = 1883;
 
 const char *MQTT_CLIENT_ID = "esp32_grupo5";
 
-const char *MQTT_USUARIO = "diogo";
+const char *MQTT_USUARIO = "";
 
-const char *MQTT_SENHA = "Senai@134";
+const char *MQTT_SENHA = "";
 
-const bool MQTT_TLS = true;
+const bool MQTT_TLS = false;
 
 const char MQTT_CERTIFICADO_CA[] PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----

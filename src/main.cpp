@@ -28,7 +28,7 @@ Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infrave
 
 const char TOPICO_COMANDO[] = "ArCondicionado/AC1/comando";
 
-const uint8_t PINO_IR = 32;
+const uint8_t PINO_IR = 13;
 
 const char *numeroDoAc = "A/C 1";
 
@@ -47,6 +47,7 @@ void setup()
   registrarCallbackMensagem(tratarMensagemRecebida);
   conectarMQTT();
   ac.begin();
+  pinMode(13, INPUT_PULLUP);
 }
 
 void loop()
@@ -113,7 +114,7 @@ void tratarJsonComando(const String &mensagem)
     if (!doc["ArCondicionado"]["power"].is<bool>())
     {
       debugErro("Comando Inválido.");
-      debugErro("Utilize \"power\":\"HIGH\" ou \"LOW\".");
+      debugErro("Utilize \"power\":\"true\" ou \"false\".");
       return;
     }
 
@@ -123,7 +124,7 @@ void tratarJsonComando(const String &mensagem)
     {
       bool estadoAC = doc["ArCondicionado"]["power"].as<bool>();
 
-      if (doc["ArCondicionado"]["power"])
+      if (estadoAC == true)
       {
         ac.setCmd(kFujitsuAcCmdTurnOn);
         ac.send();
@@ -131,12 +132,12 @@ void tratarJsonComando(const String &mensagem)
         return;
       }
 
-      else if (!doc["ArCondicionado"]["power"])
+      else if (estadoAC == false)
       {
         ac.setCmd(kFujitsuAcCmdTurnOff);
         ac.send();
-        return;
         Serial.printf("%s: OFF\n\r", numeroDoAc);
+        return;
       }
     }
 
