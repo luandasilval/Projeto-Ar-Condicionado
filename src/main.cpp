@@ -1,4 +1,4 @@
-/* 
+/*
 Autores:
 Augusto Vicente Santos
 Diogo De Andrade Chelles
@@ -24,32 +24,29 @@ Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infrave
 #include "MqttManager.h"
 #include "DebugManager.h"
 
-void modoFan();
-//*=======constantes==========
+//* ********** CONSTANTES **********
 
-const uint16_t pinLed = 18;
+const char TOPICO_COMANDO[] = "ArCondicionado/AC1/comando";
 
-// Objeto Fujitsu
-IRFujitsuAC ac(pinLed);
+const uint8_t PINO_IR = 32;
 
-const char TOPICO_COMANDO[] = "senai134/esp32/comando";
+const char *numeroDoAc = "A/C 1";
 
-const int boot = 0;
-bool estadoAnteriorBoot = HIGH;
-bool estadoAtualBoot = digitalRead(boot);
+//* ********** INSTÂNCIAS **********
 
-// void tratarMensagemRecebida(const char *topico, const String &mensagem);
-// void tratarJsonComando(const String &mensagem);
+IRFujitsuAC ac(PINO_IR);
+
+void tratarMensagemRecebida(const char *topico, const String &mensagem);
+void tratarJsonComando(const String &mensagem);
 
 void setup()
 {
-  configurarDebug();
+  configurarDebug(); //* FUNÇÕES "BEGIN" E "DELAY" JÁ INCLUSAS
   conectarWiFi();
   configurarMQTT();
-  // registrarCallbackMensagem(tratarMensagemRecebida);
+  registrarCallbackMensagem(tratarMensagemRecebida);
   conectarMQTT();
-
-  pinMode(boot, INPUT_PULLUP);
+  ac.begin();
 }
 
 void loop()
@@ -57,51 +54,6 @@ void loop()
   garantirWiFiConectado();
   garantirMQTTconectado();
   loopMQTT();
-
-  // Envia comando para o infravermelho
-  ac.send();
-  ac.begin();
-
-  if (estadoAnteriorBoot == HIGH && estadoAtualBoot == 0)
-  {
-    ac.on();
-    ac.send();
-    estadoAnteriorBoot = estadoAtualBoot;
-  }
-}
-
-void modoFan()
-{
-  // Temperatura
-  ac.setTemp(23);
-
-  switch (kFujitsuAcModeFan)
-  {
-  case 1: // FAN HIGH
-    ac.setFanSpeed(kFujitsuAcFanHigh);
-    Serial.println("Modo FAN HIGH enviado!");
-    break;
-
-  case 2: // FAN LOW
-    ac.setFanSpeed(kFujitsuAcFanLow);
-    Serial.println("Modo FAN LOW enviado!");
-    break;
-
-  case 3: // FAN QUIET
-    ac.setFanSpeed(kFujitsuAcFanQuiet);
-    Serial.println("Modo FAN QUIET enviado!");
-    break;
-
-  case 4: // FAN MEDIO
-    ac.setFanSpeed(kFujitsuAcFanMed);
-    Serial.println("Modo FAN MEDIO enviado!");
-    break;
-
-  case 5: // FAN AUTO
-    ac.setFanSpeed(kFujitsuAcFanAuto);
-    Serial.println("Modo FAN AUTO enviado!");
-    break;
-  }
 }
 
 void tratarMensagemRecebida(const char *topico, const String &mensagem)
@@ -134,6 +86,8 @@ void tratarJsonComando(const String &mensagem)
 
   DeserializationError erro = deserializeJson(doc, mensagem);
 
+  //* DEBUG "ERRO"  ⇩
+
   if (erro)
   {
     debugErro("Erro ao interpretar o JSON");
@@ -141,23 +95,51 @@ void tratarJsonComando(const String &mensagem)
     return;
   }
 
-  if (!doc["Led"].is<JsonObject>())
+  //* DEBUG VERIFICAÇÃO JSON OBJECT  ⇩
+
+  if (!doc["ArCondicionado"].is<JsonObject>())
   {
-    debugInfo("Não encontrado o comando para o led RGB");
+    debugErro("Não encontrado comando para o Ar Condicionado.");
+    return;
   }
-  else
+
+  else //* escopo que será utilizado para tratar as mensagens no formato JSON
   {
-    if (!doc["led"]["r"].is<int>() ||
-        !doc["led"]["g"].is<int>() ||
-        !doc["led"]["b"].is<int>())
+
+    //*********************** ESTADOS "POWER" (HIGH & LOW) *****************************
+
+    //* DEBUG ESTADOS "POWER"  ⇩
+
+    if (!doc["ArCondicionado"]["power"].is<bool>())
     {
-      debugErro("Json Inválido. Use led.r, led.g e led.b");
+      debugErro("Comando Inválido.");
+      debugErro("Utilize \"power\":\"HIGH\" ou \"LOW\".");
+      return;
     }
+
+    //* FUNÇÕES "POWER"  ⇩
+
     else
     {
-      int vermelho = doc["led"]["r"].as<int>();
-      int verde = doc["led"]["r"].as<int>();
-      int azul = doc["led"]["r"].as<int>();
+      bool estadoAC = doc["ArCondicionado"]["power"].as<bool>();
+
+      if (doc["ArCondicionado"]["power"])
+      {
+        ac.setCmd(kFujitsuAcCmdTurnOn);
+        ac.send();
+        Serial.printf("%s: ON\n\r", numeroDoAc);
+        return;
+      }
+
+      else if (!doc["ArCondicionado"]["power"])
+      {
+        ac.setCmd(kFujitsuAcCmdTurnOff);
+        ac.send();
+        return;
+        Serial.printf("%s: OFF\n\r", numeroDoAc);
+      }
     }
+
+    // TODO: if()...
   }
 }
