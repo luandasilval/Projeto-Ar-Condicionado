@@ -24,7 +24,9 @@ Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infrave
 #include "MqttManager.h"
 #include "DebugManager.h"
 
-//* ********** CONSTANTES **********
+//====================================================
+// CONSTANTES
+//====================================================
 
 const char TOPICO_COMANDO[] = "ArCondicionado/AC1/comando";
 
@@ -32,115 +34,266 @@ const uint8_t PINO_IR = 13;
 
 const char *numeroDoAc = "A/C 1";
 
-//* ********** INSTÂNCIAS **********
+//====================================================
+// INSTÂNCIAS
+//====================================================
 
 IRFujitsuAC ac(PINO_IR);
 
-void tratarMensagemRecebida(const char *topico, const String &mensagem);
+//====================================================
+// PROTÓTIPOS
+//====================================================
+
+void tratarMensagemRecebida(const char *topico,
+                            const String &mensagem);
+
 void tratarJsonComando(const String &mensagem);
+
+//====================================================
+// SETUP
+//====================================================
 
 void setup()
 {
-  configurarDebug(); //* FUNÇÕES "BEGIN" E "DELAY" JÁ INCLUSAS
-  conectarWiFi();
-  configurarMQTT();
-  registrarCallbackMensagem(tratarMensagemRecebida);
-  conectarMQTT();
-  ac.begin();
-  pinMode(13, INPUT_PULLUP);
+    ac.begin();
+
+    configurarDebug();
+
+    conectarWiFi();
+
+    configurarMQTT();
+
+    registrarCallbackMensagem(tratarMensagemRecebida);
+
+    conectarMQTT();
+
+    ac.setModel(ARRAH2E);
+
+    // Estado inicial
+
+    ac.on();
+
+    ac.setMode(kFujitsuAcModeCool);
+
+    ac.setTemp(24);
+
+    ac.setFanSpeed(kFujitsuAcFanAuto);
+
+    ac.setSwing(kFujitsuAcSwingOff);
+
+    debugInfo("Controle Fujitsu inicializado");
 }
+
+//====================================================
+// LOOP
+//====================================================
 
 void loop()
 {
-  garantirWiFiConectado();
-  garantirMQTTconectado();
-  loopMQTT();
+    garantirWiFiConectado();
+
+    garantirMQTTconectado();
+
+    loopMQTT();
 }
 
-void tratarMensagemRecebida(const char *topico, const String &mensagem)
+//====================================================
+// CALLBACK MQTT
+//====================================================
+
+void tratarMensagemRecebida(const char *topico,
+                            const String &mensagem)
 {
-  debugInfo("==============================");
-  debugInfo("Mensagem recebida na aplicação");
-  debugInfo("==============================");
+    debugInfo("========================================");
+    debugInfo("Mensagem MQTT recebida");
+    debugInfo("========================================");
 
-  if (topico == nullptr)
-  {
-    debugErro("Tópico MQTT inválido");
-    return;
-  }
+    if (topico == nullptr)
+    {
+        debugErro("Topico MQTT invalido");
+        return;
+    }
 
-  debugInfo("Tõpico:" + String(topico));
-  debugInfo("Tõpico:" + mensagem);
+    debugInfo("Topico: " + String(topico));
+    debugInfo("Payload: " + mensagem);
 
-  if (strcmp(topico, TOPICO_COMANDO) == 0)
-  {
-    tratarJsonComando(mensagem);
-    return;
-  }
+    if (strcmp(topico, TOPICO_COMANDO) == 0)
+    {
+        tratarJsonComando(mensagem);
+        return;
+    }
 
-  debugErro("Tópico não tratado:" + String(topico));
+    debugErro("Topico nao tratado: " + String(topico));
 }
+
+//====================================================
+// PROCESSAMENTO JSON
+//====================================================
 
 void tratarJsonComando(const String &mensagem)
 {
-  JsonDocument doc;
+    JsonDocument doc;
 
-  DeserializationError erro = deserializeJson(doc, mensagem);
+    DeserializationError erro =
+        deserializeJson(doc, mensagem);
 
-  //* DEBUG "ERRO"  ⇩
-
-  if (erro)
-  {
-    debugErro("Erro ao interpretar o JSON");
-    debugErro(erro.c_str());
-    return;
-  }
-
-  //* DEBUG VERIFICAÇÃO JSON OBJECT  ⇩
-
-  if (!doc["ArCondicionado"].is<JsonObject>())
-  {
-    debugErro("Não encontrado comando para o Ar Condicionado.");
-    return;
-  }
-
-  else //* escopo que será utilizado para tratar as mensagens no formato JSON
-  {
-
-    //*********************** ESTADOS "POWER" (HIGH & LOW) *****************************
-
-    //* DEBUG ESTADOS "POWER"  ⇩
-
-    if (!doc["ArCondicionado"]["power"].is<bool>())
+    if (erro)
     {
-      debugErro("Comando Inválido.");
-      debugErro("Utilize \"power\":\"true\" ou \"false\".");
-      return;
+        debugErro("Erro ao interpretar JSON");
+        debugErro(erro.c_str());
+        return;
     }
 
-    //* FUNÇÕES "POWER"  ⇩
+    JsonObject ar =
+        doc["ArCondicionado"];
 
+    if (ar.isNull())
+    {
+        debugErro("Objeto ArCondicionado nao encontrado");
+        return;
+    }
+
+    bool alterouEstado = false;
+
+    //------------------------------------------------
+    // POWER
+    //------------------------------------------------
+
+    if (ar["power"].is<bool>())
+    {
+        bool power = ar["power"];
+
+        if (power)
+        {
+            ac.on();
+            debugInfo("Power ON");
+        }
+        else
+        {
+            ac.off();
+            debugInfo("Power OFF");
+        }
+
+        alterouEstado = true;
+    }
+
+    //------------------------------------------------
+    // MODO
+    //------------------------------------------------
+
+    if (ar["modo"].is<int>())
+    {
+        int modo = ar["modo"];
+
+        if (modo >= 0 && modo <= 4)
+        {
+            ac.setMode(modo);
+
+            debugInfo("Modo atualizado: " +
+                      String(modo));
+
+            alterouEstado = true;
+        }
+        else
+        {
+            debugErro("Modo invalido");
+        }
+    }
+
+    //------------------------------------------------
+    // TEMPERATURA
+    //------------------------------------------------
+
+    if (ar["temperatura"].is<int>())
+    {
+        int temperatura =
+            ar["temperatura"];
+
+        if (temperatura >= 16 &&
+            temperatura <= 30)
+        {
+            ac.setTemp(temperatura);
+
+            debugInfo(
+                "Temperatura: " +
+                String(temperatura));
+
+            alterouEstado = true;
+        }
+        else
+        {
+            debugErro(
+                "Temperatura fora da faixa (16-30)");
+        }
+    }
+
+    //------------------------------------------------
+    // FAN
+    //------------------------------------------------
+
+    if (ar["fan"].is<int>())
+    {
+        int fan = ar["fan"];
+
+        if (fan >= 0 && fan <= 4)
+        {
+            ac.setFanSpeed(fan);
+
+            debugInfo(
+                "Fan: " +
+                String(fan));
+
+            alterouEstado = true;
+        }
+        else
+        {
+            debugErro("Velocidade fan invalida");
+        }
+    }
+
+    //------------------------------------------------
+    // SWING
+    //------------------------------------------------
+
+    if (ar["swing"].is<int>())
+    {
+        int swing = ar["swing"];
+
+        if (swing >= 0 && swing <= 3)
+        {
+            ac.setSwing(swing);
+
+            debugInfo(
+                "Swing: " +
+                String(swing));
+
+            alterouEstado = true;
+        }
+        else
+        {
+            debugErro("Swing invalido");
+        }
+    }
+
+    //------------------------------------------------
+    // ENVIA COMANDO IR
+    //------------------------------------------------
+
+    if (alterouEstado)
+    {
+        debugInfo("Enviando comando IR...");
+
+        ac.send();
+
+        debugInfo(ac.toString());
+
+        Serial.println();
+        Serial.println("========== ESTADO AC ==========");
+        Serial.println(ac.toString());
+        Serial.println("===============================");
+    }
     else
     {
-      bool estadoAC = doc["ArCondicionado"]["power"].as<bool>();
-
-      if (estadoAC == true)
-      {
-        ac.setCmd(kFujitsuAcCmdTurnOn);
-        ac.send();
-        Serial.printf("%s: ON\n\r", numeroDoAc);
-        return;
-      }
-
-      else if (estadoAC == false)
-      {
-        ac.setCmd(kFujitsuAcCmdTurnOff);
-        ac.send();
-        Serial.printf("%s: OFF\n\r", numeroDoAc);
-        return;
-      }
+        debugErro("Nenhum parametro valido recebido");
     }
-
-    // TODO: if()...
-  }
 }
