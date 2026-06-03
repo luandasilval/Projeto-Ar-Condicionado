@@ -147,12 +147,6 @@ void tratarJsonComando(const String &mensagem)
     JsonObject ar =
         doc["ArCondicionado"];
 
-    if (ar.isNull())
-    {
-        debugErro("Objeto ArCondicionado nao encontrado");
-        return;
-    }
-
     bool alterouEstado = false;
 
     //------------------------------------------------
@@ -165,12 +159,14 @@ void tratarJsonComando(const String &mensagem)
 
         if (power)
         {
-            ac.on();
+            ac.setCmd(kFujitsuAcCmdTurnOn);
+            ac.send();
             debugInfo("Power ON");
         }
         else
         {
-            ac.off();
+            ac.setCmd(kFujitsuAcCmdTurnOff);
+            ac.send();
             debugInfo("Power OFF");
         }
 
@@ -188,6 +184,7 @@ void tratarJsonComando(const String &mensagem)
         if (modo >= 0 && modo <= 4)
         {
             ac.setMode(modo);
+            ac.send();
 
             debugInfo("Modo atualizado: " +
                       String(modo));
@@ -213,6 +210,7 @@ void tratarJsonComando(const String &mensagem)
             temperatura <= 30)
         {
             ac.setTemp(temperatura);
+            ac.send();
 
             debugInfo(
                 "Temperatura: " +
@@ -238,6 +236,7 @@ void tratarJsonComando(const String &mensagem)
         if (fan >= 0 && fan <= 4)
         {
             ac.setFanSpeed(fan);
+            ac.send();
 
             debugInfo(
                 "Fan: " +
@@ -252,30 +251,6 @@ void tratarJsonComando(const String &mensagem)
     }
 
     //------------------------------------------------
-    // SWING
-    //------------------------------------------------
-
-    if (ar["swing"].is<int>())
-    {
-        int swing = ar["swing"];
-
-        if (swing >= 0 && swing <= 3)
-        {
-            ac.setSwing(swing);
-
-            debugInfo(
-                "Swing: " +
-                String(swing));
-
-            alterouEstado = true;
-        }
-        else
-        {
-            debugErro("Swing invalido");
-        }
-    }
-
-    //------------------------------------------------
     // ENVIA COMANDO IR
     //------------------------------------------------
 
@@ -283,7 +258,7 @@ void tratarJsonComando(const String &mensagem)
     {
         debugInfo("Enviando comando IR...");
 
-        ac.send();
+        // ac.send();
 
         debugInfo(ac.toString());
 
