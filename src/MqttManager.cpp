@@ -219,7 +219,7 @@ int obterTotalTopicosRecebimento()
 
 void garantirMQTTconectado()
 {
-    if (!wifiEstaConectado)
+    if (!wifiEstaConectado())
     {
         debugErro("MQTT não reconectado porque o WiFi está desconectado.");
         return;
