@@ -26,11 +26,11 @@ Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infrave
 
 //*********************** CONSTANTES E VARIÁVEIS *****************************
 
-const char TOPICO_COMANDO[] = "ArCondicionado/AC1/comando";
+const char TOPICO_COMANDO[] = "senai134/shared";
 
 const char *numeroDoAc = "A/C 1";
 
-const uint8_t PINO_IR = 13;
+const uint8_t PINO_IR = 42;
 
 int tempDefault = 24;
 
@@ -262,7 +262,7 @@ void tratarJsonComando(const String &mensagem)
 
             if (diminuir_temp)
             {
-                tempDefault++;
+                tempDefault--;
 
                 if (tempDefault >= 16)
                 {
@@ -286,6 +286,7 @@ void tratarJsonComando(const String &mensagem)
                 debugErro("Use: \"diminuir_temp\": true");
             }
         }
+
         //*********************** FAN *****************************
 
         if (objetoJsonAc["fan"].is<int>())
@@ -294,12 +295,53 @@ void tratarJsonComando(const String &mensagem)
 
             if (fan >= 0 && fan <= 4)
             {
-                ac.setFanSpeed(fan);
-                ac.send();
 
-                debugInfo("Fan: " + String(fan));
+                if (objetoJsonAc["fan"] == 0)
+                {
+                    ac.setFanSpeed(kFujitsuAcFanAuto);
+                    ac.send();
 
-                alterouEstado = true;
+                    debugInfo("Fan: Auto");
+
+                    alterouEstado = true;
+                }
+
+                else if (objetoJsonAc["fan"] == 1)
+                {
+                    ac.setFanSpeed(kFujitsuAcFanHigh);
+                    ac.send();
+
+                    debugInfo("Fan: High");
+
+                    alterouEstado = true;
+                }
+                else if (objetoJsonAc["fan"] == 2)
+                {
+                    ac.setFanSpeed(kFujitsuAcFanMed);
+                    ac.send();
+
+                    debugInfo("Fan: Med");
+
+                    alterouEstado = true;
+                }
+                else if (objetoJsonAc["fan"] == 3)
+                {
+                    ac.setFanSpeed(kFujitsuAcFanLow);
+                    ac.send();
+
+                    debugInfo("Fan: Low");
+
+                    alterouEstado = true;
+                }
+               else if (objetoJsonAc["fan"])
+                {
+                    ac.setFanSpeed(kFujitsuAcFanQuiet);
+                    ac.send();
+
+                    debugInfo("Fan: Quiet");
+
+                    alterouEstado = true;
+                }
             }
 
             else
@@ -312,6 +354,9 @@ void tratarJsonComando(const String &mensagem)
 
         if (alterouEstado)
         {
+
+            publicarMensagemNoTopico(0, "Alterado estado do Ar Condicionado");
+
             debugInfo(ac.toString());
 
             Serial.println();
@@ -326,3 +371,5 @@ void tratarJsonComando(const String &mensagem)
         }
     }
 }
+
+// ac.isNull();

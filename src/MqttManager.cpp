@@ -195,7 +195,7 @@ void conectarMQTT()
                 }
             }
 
-            publicarMensagemNoTopico(0, "ESP32 conectado ao MQTT");
+            publicarMensagemNoTopico(0, "Grupo BOO conectado à AWS");
         }
 
         else
