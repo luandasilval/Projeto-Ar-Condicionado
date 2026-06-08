@@ -1,9 +1,12 @@
 /*
+
 Autores:
+
 Augusto Vicente Santos
 Diogo de Andrade Chelles
 Luanda da Silva Leite
 Lucas de Oliveira Donega
+Guilherme Fellipe
 
 Data de entrega do projeto: 5 de junho de 2026
 Versão: 1.0
@@ -12,7 +15,7 @@ Programa: Controle do ar Condicionado Via MQTT
 Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infravermelho com LED, aplicando os modos FAN, AUTO e COOL, ligando e desligando o ar Condicionado. Quando um Json for enviado para o Nosso ESP32, esse microcontrolador vai ativar o infravermelho, enviando o sinal solicitado (pelo usuário) para o ar condicionado
 */
 
-//*main.cpp
+// main.cpp
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
