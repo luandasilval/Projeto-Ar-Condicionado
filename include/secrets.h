@@ -5,22 +5,6 @@
 extern const char *WIFI_SSID;
 extern const char *WIFI_SENHA;
 
-// =================================================
-// MQTT
-// =================================================
-
-extern const char *MQTT_BROKER;
-extern const int MQTT_PORTA;
-
-extern const char *MQTT_CLIENT_ID;
-
-extern const char *MQTT_USUARIO;
-extern const char *MQTT_SENHA;
-
-extern const bool MQTT_TLS;
-
-extern const char MQTT_CERTIFICADO_CA[];
-
 extern const char *TOPICOS_PUBLICAR[];
 
 extern const int TOTAL_TOPICOS_PUBLICAR;

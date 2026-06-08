@@ -79,52 +79,17 @@ void configurarMQTT()
     debugInfo(" Configurando MQTT...");
     debugInfo("=============================================================================");
 
-    if (USAR_AWS_IOT)
-    {
-        debugInfo("Modo selecionado: MQTT com TLS.");
+    debugInfo("Modo selecionado: AWS");
 
-        wifiClientSecure.setCACert(AWS_CERTIFICADO_CA);
-        wifiClientSecure.setCertificate(AWS_CERTIFICADO_CRT);
-        wifiClientSecure.setPrivateKey(AWS_CERTIFICADO_PRIVATE);
+    wifiClientSecure.setCACert(AWS_CERTIFICADO_CA);
+    wifiClientSecure.setCertificate(AWS_CERTIFICADO_CRT);
+    wifiClientSecure.setPrivateKey(AWS_CERTIFICADO_PRIVATE);
 
-        mqttClient.setClient(wifiClientSecure);
-        mqttClient.setServer(AWS_IOT_ENDPOINT, AWS_IOT_PORT);
+    mqttClient.setClient(wifiClientSecure);
+    mqttClient.setServer(AWS_IOT_ENDPOINT, AWS_IOT_PORT);
 
-        debugInfo("Endpoint AWS IoT: " + String(AWS_IOT_ENDPOINT));
-        debugInfo("Porta AWS IoT: " + String(AWS_IOT_PORT));
-    }
-    else if (MQTT_TLS)
-    {
-        debugInfo("Modo selecionado: MQTT com TLS.");
-
-        if (strlen(MQTT_CERTIFICADO_CA) > 100)
-        {
-            debugInfo("Certificado CA do broker MQTT configurado.");
-            wifiClientSecure.setCACert(MQTT_CERTIFICADO_CA);
-        }
-        else
-        {
-            debugErro("Certificado não configurado. Usando setInsecure apenas para teste.");
-            wifiClientSecure.setInsecure();
-        }
-
-        mqttClient.setClient(wifiClientSecure);
-        mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
-
-        debugInfo("Broker MQTT: " + String(MQTT_BROKER));
-        debugInfo("Porta MQTT: " + String(MQTT_PORTA));
-    }
-
-    else // Conectar ao broker público sem certificado
-    {
-        debugInfo("Modo Selecionado: MQTT sem TLS.");
-
-        mqttClient.setClient(wifiCliente);
-        mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
-
-        debugInfo("Broker MQTT: " + String(MQTT_BROKER));
-        debugInfo("Porta MQTT: " + String(MQTT_PORTA));
-    }
+    debugInfo("Endpoint AWS IoT: " + String(AWS_IOT_ENDPOINT));
+    debugInfo("Porta AWS IoT: " + String(AWS_IOT_PORT));
 
     mqttClient.setCallback(callbackInternoMQTT); //! Quando chegar mensagem, execute a função "callbackInternoMQTT"
     debugInfo("Callback interno no MQTT configurado");
@@ -148,28 +113,8 @@ void conectarMQTT()
     while (!mqttClient.connected() && tentativasMQTT < maxTentativasMQTT)
     {
         debugInfo("Tentando conectar ao broker MQTT. Tentativa: " + String(tentativasMQTT));
-        bool conectado = false;
+        bool conectado = mqttClient.connect(AWS_IOT_CLIENT_ID);
 
-        if (USAR_AWS_IOT)
-        {
-            conectado = mqttClient.connect(AWS_IOT_CLIENT_ID);
-        }
-
-        else
-        {
-            if (strlen(MQTT_USUARIO) > 0)
-            {
-                debugInfo("Conectando MQTT com usuário e senha.");
-
-                conectado = mqttClient.connect(MQTT_CLIENT_ID, MQTT_USUARIO, MQTT_SENHA);
-            }
-
-            else // conexão em modo anônimo
-            {
-                debugInfo("Conectando MQTT sem usuário e senha.");
-                conectado = mqttClient.connect(MQTT_CLIENT_ID);
-            }
-        }
         if (conectado)
         {
             debugInfo("MQTT conectado com sucesso.");
@@ -197,7 +142,6 @@ void conectarMQTT()
 
             publicarMensagemNoTopico(0, "Grupo BOO conectado à AWS");
         }
-
         else
         {
             debugErro("Falha ao conectar no MQTT. Código de erro: " + String(mqttClient.state()));

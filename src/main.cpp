@@ -28,11 +28,11 @@ Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infrave
 //*                      ⇩ ⇩ ⇩      CONSTANTES E VARIÁVEIS      ⇩ ⇩ ⇩
 //*========================================================================================
 
-const char TOPICO_COMANDO[] = "senai134/shared";
+const char TOPICO_COMANDO[] = "senai134/shared/projeto/ar_condicionado";
 
 const char *numeroDoAc = "A/C 1";
 
-const uint8_t PINO_IR = 42;
+const uint8_t PINO_IR = 13;
 
 int tempDefault = 24;
 
@@ -173,30 +173,20 @@ void tratarJsonComando(const String &mensagem)
 
         if (power)
         {
-            ac.on();
-            //? ac.setCmd(kFujitsuAcCmdTurnOn);
+            ac.setCmd(kFujitsuAcCmdTurnOn);
             ac.send();
             debugInfo("Power ON");
             publicarMensagemNoTopico(3, "Comando enviado.");
         }
         else
         {
-            ac.off();
-            //? ac.setCmd(kFujitsuAcCmdTurnOff);
+            ac.setCmd(kFujitsuAcCmdTurnOff);
             ac.send();
             debugInfo("Power OFF");
             publicarMensagemNoTopico(3, "Comando enviado.");
         }
 
         alterouEstado = true;
-    }
-
-    else
-    {
-        debugErro("Comando inválido.");
-        debugErro("Utilize: \"power\": true\n\rou\n\r\"power\": false\n\r");
-
-        publicarMensagemNoTopico(3, "Comando inválido.\n\rUtilize: \"power\": true\n\rou\n\r\"power\": false\n\r");
     }
 
     //*========================================================================================
@@ -331,8 +321,9 @@ void tratarJsonComando(const String &mensagem)
                 ac.setTemp(tempDefault);
                 ac.send();
 
-                debugInfo("Temperatura: " + String(tempDefault) + Serial.println("°C"));
+                debugInfo("Temperatura atual: " + String(tempDefault) + Serial.println("°C"));
                 publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Aumento de 1 grau na temperatura.");
 
                 alterouEstado = true;
             }
@@ -341,17 +332,12 @@ void tratarJsonComando(const String &mensagem)
             {
                 tempDefault = 16;
 
-                debugErro("Limite de temperatura mínima atingido: 16°C");
-
                 publicarMensagemNoTopico(3, "Limite de temperatura mínima atingido: 16°C");
             }
         }
 
         else
         {
-            debugErro("Comando inválido.");
-            debugErro("Utilize: \"diminuir_temp\": true");
-
             publicarMensagemNoTopico(3, "Comando inválido");
             publicarMensagemNoTopico(3, "Utilize: \"diminuir_temp\": true");
         }
@@ -375,8 +361,8 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanAuto);
                 ac.send();
 
-                debugInfo("Fan: Auto");
                 publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Fan: Auto");
 
                 alterouEstado = true;
             }
@@ -386,8 +372,8 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanHigh);
                 ac.send();
 
-                debugInfo("Fan: High");
                 publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Fan: High");
 
                 alterouEstado = true;
             }
@@ -396,8 +382,8 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanMed);
                 ac.send();
 
-                debugInfo("Fan: Med");
                 publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Fan: Med");
 
                 alterouEstado = true;
             }
@@ -406,8 +392,8 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanLow);
                 ac.send();
 
-                debugInfo("Fan: Low");
                 publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Fan: Low");
 
                 alterouEstado = true;
             }
@@ -416,8 +402,8 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanQuiet);
                 ac.send();
 
-                debugInfo("Fan: Quiet");
                 publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Fan: Quiet");
 
                 alterouEstado = true;
             }
@@ -425,7 +411,6 @@ void tratarJsonComando(const String &mensagem)
 
         else
         {
-            debugErro("Velocidade fan invalida");
             publicarMensagemNoTopico(3, "Velocidade fan invalida");
         }
     }
@@ -438,16 +423,11 @@ void tratarJsonComando(const String &mensagem)
 
     if (alterouEstado)
     {
-
-        //? String statusAc = ac.toString();
-        //? publicarMensagemNoTopico(0, statusAc.c_str());
-
         //* Status do AC  ⇩
         publicarMensagemNoTopico(1, ac.toString().c_str());
 
         Serial.println();
         Serial.println("========== ESTADO AC ==========");
-        //? Serial.println(statusAc);
         Serial.println(ac.toString().c_str());
         Serial.println("===============================");
     }
@@ -455,7 +435,6 @@ void tratarJsonComando(const String &mensagem)
     else
     {
         //* tópico "resposta"
-        debugErro("Nenhum parâmetro válido recebido");
         publicarMensagemNoTopico(3, "Nenhum parâmetro válido recebido");
         Serial.println(ac.toString().c_str());
 
@@ -464,5 +443,3 @@ void tratarJsonComando(const String &mensagem)
         publicarMensagemNoTopico(1, ac.toString().c_str());
     }
 }
-
-// ac.isNull();
