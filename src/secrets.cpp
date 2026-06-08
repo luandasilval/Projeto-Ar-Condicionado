@@ -18,7 +18,7 @@ const char *MQTT_BROKER = "broker.hivemq.com";
 
 const int MQTT_PORTA = 1883;
 
-const char *MQTT_CLIENT_ID = "esp32-grupo5";
+const char *MQTT_CLIENT_ID = "esp32_grupo5";
 
 const char *MQTT_USUARIO = "";
 
@@ -91,7 +91,7 @@ rqXRfboQnoZsG4q5WTP468SQvvG5
 -----END CERTIFICATE-----
 )EOF";
 
-const char AWS_CERTIFICADO_CRT[] PROGMEM = R"EOF(
+const char AWS_CERTIFICADO_CRT[] PROGMEM = R"CRT(
 -----BEGIN CERTIFICATE-----
 MIIDWTCCAkGgAwIBAgIUWCyA6Aok9vtrn29FqYxTXJi+29gwDQYJKoZIhvcNAQEL
 BQAwTTFLMEkGA1UECwxCQW1hem9uIFdlYiBTZXJ2aWNlcyBPPUFtYXpvbi5jb20g
@@ -112,9 +112,9 @@ WIrQsmBRhrOmk+zT9ZLGG4Z4mDMV6DS0OnBe2nKXLegOOd2qgS8k3NTZnb4o+Tra
 Rq/nln0XT3kKrIJqcq4lw/F1oFOFEImu9Gho5j5c2Crqv95ZMQr9x/8A/hPd8S4R
 HksSijj5Z9sbMQs5Bs7lD2wlLteftAjk2sUOCDvFy8kMxHqZ4SqzWlsQBcdS
 -----END CERTIFICATE-----
-)EOF";
+)CRT";
 
-const char AWS_CERTIFICADO_PRIVATE[] PROGMEM = R"EOF(
+const char AWS_CERTIFICADO_PRIVATE[] PROGMEM = R"KEY(
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAv7szEfWB6n+dGmyL/KNkiQwFKdOTorcPMtbLiBxRf+ft0er4
 9Tcp6/Fm1dOtY9VrloJTQbCxiGNsT1vvbOREJ8/8c2YNSj5Dv+jK1VwCfrPJhvFo
@@ -142,11 +142,11 @@ GY/cqQKBgQCXk2lomxGF/S8H1oOnVY4oci98z0zsXKOP5Fb8jCmMvkXOR/7gwFsL
 SKFZaDT197F/rmfCjQ+yxeuQ+aufOdu5bnRow9tpBp9TaMe9ov1e5mgT5a/6QPDw
 9aN0QU3j2PxDPoRtLqIfRJBpF1nKjndPfXx5VjiDQ5z/kzUT3WpH2w==
 -----END RSA PRIVATE KEY-----
-)EOF";
+)KEY";
 
 const int AWS_IOT_PORT = 8883;
 
-const char *AWS_IOT_CLIENT_ID = "boo-esp32";
+const char *AWS_IOT_CLIENT_ID = "boo_esp32_ac1";
 
 // =============================
 //            TOPICOS
@@ -154,17 +154,22 @@ const char *AWS_IOT_CLIENT_ID = "boo-esp32";
 
 const char *TOPICOS_PUBLICAR[] =
     {
-        "senai134/shared"};
+        "senai134/shared/ar_condicionado",
+        "senai134/shared/ar_condicionado/status",
+        "senai134/shared/ar_condicionado/log",
+        "senai134/shared/ar_condicionado/resposta",
+        "ArCondicionado/AC1/status"};
 
-const int TOTAL_TOPICOS_PUBLICAR = 1;
+const int TOTAL_TOPICOS_PUBLICAR = 5;
 
 const char *TOPICOS_RECEBER[] =
     {
-        "ArCondicionado/AC1/comando",
-        "senai134/shared/projeto",
-        "senai134/shared/projeto/ar_condicionado"};
+        "senai134/shared",
+        "senai134/shared/ar_condicionado",
+        "senai134/shared/ar_condicionado/ac_1",
+        "ArCondicionado/AC1/comando"};
 
-const int TOTAL_TOPICOS_RECEBER = 3;
+const int TOTAL_TOPICOS_RECEBER = 4;
 
 // =============================
 //            DEBUG
