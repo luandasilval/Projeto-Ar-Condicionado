@@ -24,7 +24,9 @@ Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infrave
 #include "MqttManager.h"
 #include "DebugManager.h"
 
-//*********************** CONSTANTES E VARIÁVEIS *****************************
+//*========================================================================================
+//*                      ⇩ ⇩ ⇩      CONSTANTES E VARIÁVEIS      ⇩ ⇩ ⇩
+//*========================================================================================
 
 const char TOPICO_COMANDO[] = "senai134/shared";
 
@@ -34,18 +36,23 @@ const uint8_t PINO_IR = 42;
 
 int tempDefault = 24;
 
-//*********************** INSTÂNCIAS *****************************
+//*========================================================================================
+//*                          ⇩ ⇩ ⇩      INSTÂNCIAS      ⇩ ⇩ ⇩
+//*========================================================================================
 
 IRFujitsuAC ac(PINO_IR);
 
-//*********************** PROTÓTIPOS *****************************
+//*========================================================================================
+//*                          ⇩ ⇩ ⇩      PROTÓTIPOS      ⇩ ⇩ ⇩
+//*========================================================================================
 
-void tratarMensagemRecebida(const char *topico,
-                            const String &mensagem);
+void tratarMensagemRecebida(const char *topico, const String &mensagem);
 
 void tratarJsonComando(const String &mensagem);
 
-//*********************** SETUP *****************************
+//*========================================================================================
+//*                             ⇩ ⇩ ⇩      SETUP      ⇩ ⇩ ⇩
+//*========================================================================================
 
 void setup()
 {
@@ -76,9 +83,13 @@ void setup()
     ac.setSwing(kFujitsuAcSwingOff);
 
     debugInfo("Controle Fujitsu inicializado");
+
+    publicarMensagemNoTopico(0, ac.toString().c_str());
 }
 
-//*********************** LOOP *****************************
+//*========================================================================================
+//*                              ⇩ ⇩ ⇩      LOOP      ⇩ ⇩ ⇩
+//*========================================================================================
 
 void loop()
 {
@@ -89,10 +100,13 @@ void loop()
     loopMQTT();
 }
 
-//*********************** CALLBACK MQTT *****************************
+//*========================================================================================
 
-void tratarMensagemRecebida(const char *topico,
-                            const String &mensagem)
+//*                         ⇩ ⇩ ⇩      CALLBACK MQTT      ⇩ ⇩ ⇩
+
+//*========================================================================================
+
+void tratarMensagemRecebida(const char *topico, const String &mensagem)
 {
     debugInfo("========================================");
     debugInfo("Mensagem MQTT recebida");
@@ -116,7 +130,11 @@ void tratarMensagemRecebida(const char *topico,
     debugErro("Topico nao tratado: " + String(topico));
 }
 
-//*********************** TRATAMENTO JSON *****************************
+//*========================================================================================
+
+//*                        ⇩ ⇩ ⇩      TRATAMENTO JSON      ⇩ ⇩ ⇩
+
+//*========================================================================================
 
 void tratarJsonComando(const String &mensagem)
 {
@@ -131,47 +149,69 @@ void tratarJsonComando(const String &mensagem)
         return;
     }
 
-    if (!doc["ArCondicionado"].is<JsonObject>())
+    if (!doc["arCondicionado"].is<JsonObject>())
     {
-        debugErro("Objeto ArCondicionado nao encontrado");
+        debugErro("Objeto \"arCondicionado\" não encontrado");
         return;
     }
 
-    JsonObject objetoJsonAc = doc["ArCondicionado"];
+    //? JsonObject objetoJsonAc = doc["arCondicionado"];
 
     bool alterouEstado = false;
 
-    //*********************** POWER *****************************
+    //*========================================================================================
 
-    if (objetoJsonAc["power"].is<bool>())
+    //*                            ⇩ ⇩ ⇩      POWER      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    //? if (objetoJsonAc["power"].is<bool>())
+    if (doc["arCondicionado"]["power"].is<bool>())
     {
-        bool power = objetoJsonAc["power"];
+        //? bool power = objetoJsonAc["power"];
+        bool power = doc["arCondicionado"]["power"].as<bool>();
 
         if (power)
         {
-            ac.setCmd(kFujitsuAcCmdTurnOn);
+            ac.on();
+            //? ac.setCmd(kFujitsuAcCmdTurnOn);
             ac.send();
             debugInfo("Power ON");
+            publicarMensagemNoTopico(3, "Comando enviado.");
         }
         else
         {
-            ac.setCmd(kFujitsuAcCmdTurnOff);
+            ac.off();
+            //? ac.setCmd(kFujitsuAcCmdTurnOff);
             ac.send();
             debugInfo("Power OFF");
+            publicarMensagemNoTopico(3, "Comando enviado.");
         }
 
         alterouEstado = true;
     }
 
-    //*********************** DEFINIÇÃO DOS MODOS *****************************
+    else
+    {
+        debugErro("Comando inválido.");
+        debugErro("Utilize: \"power\": true\n\rou\n\r\"power\": false\n\r");
+
+        publicarMensagemNoTopico(3, "Comando inválido.\n\rUtilize: \"power\": true\n\rou\n\r\"power\": false\n\r");
+    }
+
+    //*========================================================================================
+
+    //*                        ⇩ ⇩ ⇩      DEFINIÇÃO DOS MODOS      ⇩ ⇩ ⇩
+
+    //*========================================================================================
 
     //! SERÃO IMPLEMENTADOS APENAS OS MODOS "0", "1" E "3".
     //! FALAR COM GRUPO "IHM" SOBRE.
     //! FALAR TAMBÉM SOBRE O STATUS DO APARELHO (SUGERIR UMA TELA DE STATUS DO AR CONDICIONADO)
 
-    if (objetoJsonAc["modo"].is<int>())
+    if (doc["arCondicionado"]["modo"].is<int>())
     {
-        int modo = objetoJsonAc["modo"];
+        int modo = doc["arCondicionado"]["modo"].as<int>();
 
         if (modo == 0 || modo == 1 || modo == 3)
         {
@@ -181,16 +221,19 @@ void tratarJsonComando(const String &mensagem)
             if (modo == 0)
             {
                 debugInfo("Modo: Auto");
+                publicarMensagemNoTopico(3, "Comando enviado.");
             }
 
             else if (modo == 1)
             {
                 debugInfo("Modo: Cool");
+                publicarMensagemNoTopico(3, "Comando enviado.");
             }
 
             else if (modo == 3)
             {
                 debugInfo("Modo: Fan");
+                publicarMensagemNoTopico(3, "Comando enviado.");
             }
 
             alterouEstado = true;
@@ -201,32 +244,41 @@ void tratarJsonComando(const String &mensagem)
         }
     }
 
-    //*********************** DEFINIÇÃO DE TEMPERATURA *****************************
+    //*========================================================================================
 
-    if (objetoJsonAc["temperatura"].is<int>())
+    //*                     ⇩ ⇩ ⇩      DEFINIÇÃO DA TEMPERATURA      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (doc["arCondicionado"]["temperatura"].is<int>())
     {
-        int temperatura = objetoJsonAc["temperatura"];
+        tempDefault = doc["arCondicionado"]["temperatura"].as<int>();
 
-        if (temperatura >= 16 && temperatura <= 30)
+        if (tempDefault >= 16 && tempDefault <= 30)
         {
-            ac.setTemp(temperatura);
+            ac.setTemp(tempDefault);
             ac.send();
 
-            debugInfo("Temperatura: " + String(temperatura));
+            debugInfo("Temperatura: " + Serial.print(tempDefault) + Serial.println("°C"));
+            publicarMensagemNoTopico(3, "Comando enviado.");
 
             alterouEstado = true;
         }
         else
         {
-            debugErro("Temperatura fora da faixa (\"16°C\" - \"30°C\")");
+            debugErro("Temperatura fora da faixa (16°C - 30°C)");
         }
     }
 
-    //*********************** AUMENTAR TEMPERATURA DE 1 EM 1 GRAU *****************************
+    //*========================================================================================
 
-    if (objetoJsonAc["aumentar_temp"].is<bool>())
+    //*                ⇩ ⇩ ⇩      AUMENTAR TEMPERATURA DE 1 EM 1 GRAU      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (doc["arCondicionado"]["aumentar_temp"].is<bool>())
     {
-        int aumentar_temp = objetoJsonAc["aumentar_temp"];
+        int aumentar_temp = doc["arCondicionado"]["aumentar_temp"].as<bool>();
 
         if (aumentar_temp)
         {
@@ -237,138 +289,179 @@ void tratarJsonComando(const String &mensagem)
                 ac.setTemp(tempDefault);
                 ac.send();
 
-                debugInfo("Temperatura: " + String(tempDefault) + Serial.println("°C"));
+                debugInfo("Temperatura atual: " + String(tempDefault) + Serial.println("°C"));
+                publicarMensagemNoTopico(3, "Comando enviado.");
 
                 alterouEstado = true;
             }
 
             else
             {
-                debugErro("Temperatura fora da faixa (\"16°C\" - \"30°C\")");
+                tempDefault = 30;
+
+                debugErro("Limite de temperatura máxima atingido: 30°C");
+
+                publicarMensagemNoTopico(3, "Limite de temperatura máxima atingido: 30°C");
             }
         }
 
         else
         {
             debugErro("Comando inválido.");
-            debugErro("Use: \"aumentar_temp\": true");
+            debugErro("Utilize: \"aumentar_temp\": true");
         }
+    }
 
-        //*********************** DIMINUIR TEMPERATURA DE 1 EM 1 GRAU *****************************
+    //*========================================================================================
 
-        if (objetoJsonAc["diminuir_temp"].is<bool>())
+    //*                ⇩ ⇩ ⇩      DIMINUIR TEMPERATURA DE 1 EM 1 GRAU      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (doc["arCondicionado"]["diminuir_temp"].is<bool>())
+    {
+        int diminuir_temp = doc["arCondicionado"]["diminuir_temp"].as<bool>();
+
+        if (diminuir_temp)
         {
-            int diminuir_temp = objetoJsonAc["diminuir_temp"];
+            tempDefault--;
 
-            if (diminuir_temp)
+            if (tempDefault >= 16)
             {
-                tempDefault--;
+                ac.setTemp(tempDefault);
+                ac.send();
 
-                if (tempDefault >= 16)
-                {
-                    ac.setTemp(tempDefault);
-                    ac.send();
+                debugInfo("Temperatura: " + String(tempDefault) + Serial.println("°C"));
+                publicarMensagemNoTopico(3, "Comando enviado.");
 
-                    debugInfo("Temperatura: " + String(tempDefault) + Serial.println("°C"));
-
-                    alterouEstado = true;
-                }
-
-                else
-                {
-                    debugErro("Temperatura fora da faixa (\"16°C\" - \"30°C\")");
-                }
+                alterouEstado = true;
             }
 
             else
             {
-                debugErro("Comando inválido.");
-                debugErro("Use: \"diminuir_temp\": true");
+                tempDefault = 16;
+
+                debugErro("Limite de temperatura mínima atingido: 16°C");
+
+                publicarMensagemNoTopico(3, "Limite de temperatura mínima atingido: 16°C");
             }
-        }
-
-        //*********************** FAN *****************************
-
-        if (objetoJsonAc["fan"].is<int>())
-        {
-            int fan = objetoJsonAc["fan"];
-
-            if (fan >= 0 && fan <= 4)
-            {
-
-                if (objetoJsonAc["fan"] == 0)
-                {
-                    ac.setFanSpeed(kFujitsuAcFanAuto);
-                    ac.send();
-
-                    debugInfo("Fan: Auto");
-
-                    alterouEstado = true;
-                }
-
-                else if (objetoJsonAc["fan"] == 1)
-                {
-                    ac.setFanSpeed(kFujitsuAcFanHigh);
-                    ac.send();
-
-                    debugInfo("Fan: High");
-
-                    alterouEstado = true;
-                }
-                else if (objetoJsonAc["fan"] == 2)
-                {
-                    ac.setFanSpeed(kFujitsuAcFanMed);
-                    ac.send();
-
-                    debugInfo("Fan: Med");
-
-                    alterouEstado = true;
-                }
-                else if (objetoJsonAc["fan"] == 3)
-                {
-                    ac.setFanSpeed(kFujitsuAcFanLow);
-                    ac.send();
-
-                    debugInfo("Fan: Low");
-
-                    alterouEstado = true;
-                }
-               else if (objetoJsonAc["fan"])
-                {
-                    ac.setFanSpeed(kFujitsuAcFanQuiet);
-                    ac.send();
-
-                    debugInfo("Fan: Quiet");
-
-                    alterouEstado = true;
-                }
-            }
-
-            else
-            {
-                debugErro("Velocidade fan invalida");
-            }
-        }
-
-        //*********************** PRINTA STATUS DO AC *****************************
-
-        if (alterouEstado)
-        {
-
-            publicarMensagemNoTopico(0, "Alterado estado do Ar Condicionado");
-
-            debugInfo(ac.toString());
-
-            Serial.println();
-            Serial.println("========== ESTADO AC ==========");
-            Serial.println(ac.toString());
-            Serial.println("===============================");
         }
 
         else
         {
-            debugErro("Nenhum parâmetro válido recebido");
+            debugErro("Comando inválido.");
+            debugErro("Utilize: \"diminuir_temp\": true");
+
+            publicarMensagemNoTopico(3, "Comando inválido");
+            publicarMensagemNoTopico(3, "Utilize: \"diminuir_temp\": true");
         }
+    }
+
+    //*========================================================================================
+
+    //*                                ⇩ ⇩ ⇩      FAN      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (doc["arCondicionado"]["fan"].is<int>())
+    {
+        int fan = doc["arCondicionado"]["fan"].as<int>();
+
+        if (fan >= 0 && fan <= 4)
+        {
+
+            if (fan == 0)
+            {
+                ac.setFanSpeed(kFujitsuAcFanAuto);
+                ac.send();
+
+                debugInfo("Fan: Auto");
+                publicarMensagemNoTopico(3, "Comando enviado.");
+
+                alterouEstado = true;
+            }
+
+            else if (fan == 1)
+            {
+                ac.setFanSpeed(kFujitsuAcFanHigh);
+                ac.send();
+
+                debugInfo("Fan: High");
+                publicarMensagemNoTopico(3, "Comando enviado.");
+
+                alterouEstado = true;
+            }
+            else if (fan == 2)
+            {
+                ac.setFanSpeed(kFujitsuAcFanMed);
+                ac.send();
+
+                debugInfo("Fan: Med");
+                publicarMensagemNoTopico(3, "Comando enviado.");
+
+                alterouEstado = true;
+            }
+            else if (fan == 3)
+            {
+                ac.setFanSpeed(kFujitsuAcFanLow);
+                ac.send();
+
+                debugInfo("Fan: Low");
+                publicarMensagemNoTopico(3, "Comando enviado.");
+
+                alterouEstado = true;
+            }
+            else if (fan == 4)
+            {
+                ac.setFanSpeed(kFujitsuAcFanQuiet);
+                ac.send();
+
+                debugInfo("Fan: Quiet");
+                publicarMensagemNoTopico(3, "Comando enviado.");
+
+                alterouEstado = true;
+            }
+        }
+
+        else
+        {
+            debugErro("Velocidade fan invalida");
+            publicarMensagemNoTopico(3, "Velocidade fan invalida");
+        }
+    }
+
+    //*========================================================================================
+
+    //*                   ⇩ ⇩ ⇩      ENVIA E PRINTA STATUS DO AC      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (alterouEstado)
+    {
+
+        //? String statusAc = ac.toString();
+        //? publicarMensagemNoTopico(0, statusAc.c_str());
+
+        //* Status do AC  ⇩
+        publicarMensagemNoTopico(1, ac.toString().c_str());
+
+        Serial.println();
+        Serial.println("========== ESTADO AC ==========");
+        //? Serial.println(statusAc);
+        Serial.println(ac.toString().c_str());
+        Serial.println("===============================");
+    }
+
+    else
+    {
+        //* tópico "resposta"
+        debugErro("Nenhum parâmetro válido recebido");
+        publicarMensagemNoTopico(3, "Nenhum parâmetro válido recebido");
+        Serial.println(ac.toString().c_str());
+
+        //* tópico "status"  ⇩
+        publicarMensagemNoTopico(1, "Nenhum parâmetro válido recebido");
+        publicarMensagemNoTopico(1, ac.toString().c_str());
     }
 }
 
