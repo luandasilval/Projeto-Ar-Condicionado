@@ -96,7 +96,7 @@ SKFZaDT197F/rmfCjQ+yxeuQ+aufOdu5bnRow9tpBp9TaMe9ov1e5mgT5a/6QPDw
 
 const int AWS_IOT_PORT = 8883;
 
-const char *AWS_IOT_CLIENT_ID = "boo-esp32";
+const char *AWS_IOT_CLIENT_ID = "boo-esp32-ac1";
 
 // =============================
 //            TOPICOS
@@ -107,9 +107,10 @@ const char *TOPICOS_PUBLICAR[] =
         "senai134/equipe/boo/devices/ar_condicionado",
         "senai134/shared/projeto/ar_condicionado/status",
         "senai134/shared/projeto/ar_condicionado/log",
-        "senai134/shared/projeto/ar_condicionado/resposta"};
+        "senai134/shared/projeto/ar_condicionado/resposta"
+        "senai134/shared/projeto/ar_condicionado/handshake"};
 
-const int TOTAL_TOPICOS_PUBLICAR = 4;
+const int TOTAL_TOPICOS_PUBLICAR = 5;
 
 const char *TOPICOS_RECEBER[] =
     {
