@@ -50,6 +50,9 @@ void conectarWiFi()
   {
     debugErro("Falha ao conectar ao WiFi.");
     debugErro("Verifique o SSID, senha e sinal de rede.");
+
+    //* LED
+    digitalWrite(PINO_LED_WIFI, LOW);
   }
 }
 
@@ -64,9 +67,6 @@ void garantirWiFiConectado()
   if (WiFi.status() != WL_CONNECTED)
   {
     debugErro("Não foi possível reconectar ao WiFi");
-
-    //* LED
-    digitalWrite(PINO_LED_WIFI, LOW);
   }
 }
 
