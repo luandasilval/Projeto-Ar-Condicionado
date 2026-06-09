@@ -4,9 +4,9 @@ Autores:
 
 Augusto Vicente Santos
 Diogo de Andrade Chelles
+Guilherme Fellipe
 Luanda da Silva Leite
 Lucas de Oliveira Donega
-Guilherme Fellipe
 
 Data de entrega do projeto: 5 de junho de 2026
 Versão: 1.0
@@ -40,13 +40,13 @@ const uint8_t PINO_IR = 13;
 int tempDefault = 24;
 
 //*========================================================================================
-//*                          ⇩ ⇩ ⇩      INSTÂNCIAS      ⇩ ⇩ ⇩
+//*                           ⇩ ⇩ ⇩      INSTÂNCIAS      ⇩ ⇩ ⇩
 //*========================================================================================
 
 IRFujitsuAC ac(PINO_IR);
 
 //*========================================================================================
-//*                          ⇩ ⇩ ⇩      PROTÓTIPOS      ⇩ ⇩ ⇩
+//*                           ⇩ ⇩ ⇩      PROTÓTIPOS      ⇩ ⇩ ⇩
 //*========================================================================================
 
 void tratarMensagemRecebida(const char *topico, const String &mensagem);
@@ -75,19 +75,19 @@ void setup()
 
     //* Estado inicial do Ar Condicionado  ⇩
 
-    ac.setCmd(kFujitsuAcCmdTurnOn);
+    // ac.setCmd(kFujitsuAcCmdTurnOn);
 
-    ac.setMode(kFujitsuAcModeCool);
+    // ac.setMode(kFujitsuAcModeCool);
 
-    ac.setTemp(tempDefault);
+    // ac.setTemp(tempDefault);
 
-    ac.setFanSpeed(kFujitsuAcFanAuto);
+    // ac.setFanSpeed(kFujitsuAcFanAuto);
 
-    ac.setSwing(kFujitsuAcSwingOff);
+    // ac.setSwing(kFujitsuAcSwingOff);
 
     debugInfo("Controle Fujitsu inicializado");
 
-    publicarMensagemNoTopico(0, ac.toString().c_str());
+    publicarMensagemNoTopico(1, ac.toString().c_str());
 }
 
 //*========================================================================================
@@ -158,8 +158,6 @@ void tratarJsonComando(const String &mensagem)
         return;
     }
 
-    //? JsonObject objetoJsonAc = doc["arCondicionado"];
-
     bool alterouEstado = false;
 
     //*========================================================================================
@@ -168,25 +166,21 @@ void tratarJsonComando(const String &mensagem)
 
     //*========================================================================================
 
-    //? if (objetoJsonAc["power"].is<bool>())
     if (doc["arCondicionado"]["power"].is<bool>())
     {
-        //? bool power = objetoJsonAc["power"];
         bool power = doc["arCondicionado"]["power"].as<bool>();
 
         if (power)
         {
             ac.setCmd(kFujitsuAcCmdTurnOn);
             ac.send();
-            debugInfo("Power ON");
-            publicarMensagemNoTopico(3, "Comando enviado.");
+            publicarMensagemNoTopico(3, "Comando enviado.\n\rPower: ON");
         }
         else
         {
             ac.setCmd(kFujitsuAcCmdTurnOff);
             ac.send();
-            debugInfo("Power OFF");
-            publicarMensagemNoTopico(3, "Comando enviado.");
+            publicarMensagemNoTopico(3, "Comando enviado.\n\rPower: OFF");
         }
 
         alterouEstado = true;
@@ -213,27 +207,24 @@ void tratarJsonComando(const String &mensagem)
 
             if (modo == 0)
             {
-                debugInfo("Modo: Auto");
-                publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rModo: Auto");
             }
 
             else if (modo == 1)
             {
-                debugInfo("Modo: Cool");
-                publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rModo: Cool");
             }
 
             else if (modo == 3)
             {
-                debugInfo("Modo: Fan");
-                publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rModo: Fan");
             }
 
             alterouEstado = true;
         }
         else
         {
-            debugErro("Modo invalido");
+            debugErro("Modo invalido\n\rUtilize: \"modo\": 0\n\r\"modo\": 1\n\rou\n\r\"modo\": 3");
         }
     }
 
@@ -259,7 +250,7 @@ void tratarJsonComando(const String &mensagem)
         }
         else
         {
-            debugErro("Temperatura fora da faixa (16°C - 30°C)");
+            publicarMensagemNoTopico(3, "Temperatura fora da faixa (16°C - 30°C)");
         }
     }
 
@@ -283,7 +274,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.send();
 
                 debugInfo("Temperatura atual: " + String(tempDefault) + Serial.println("°C"));
-                publicarMensagemNoTopico(3, "Comando enviado.");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\r+1°C");
 
                 alterouEstado = true;
             }
@@ -292,16 +283,13 @@ void tratarJsonComando(const String &mensagem)
             {
                 tempDefault = 30;
 
-                debugErro("Limite de temperatura máxima atingido: 30°C");
-
                 publicarMensagemNoTopico(3, "Limite de temperatura máxima atingido: 30°C");
             }
         }
 
         else
         {
-            debugErro("Comando inválido.");
-            debugErro("Utilize: \"aumentar_temp\": true");
+            publicarMensagemNoTopico(3, "Comando inválido\n\rUtilize: \"aumentar_temp\": true");
         }
     }
 
@@ -325,8 +313,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.send();
 
                 debugInfo("Temperatura atual: " + String(tempDefault) + Serial.println("°C"));
-                publicarMensagemNoTopico(3, "Comando enviado.");
-                publicarMensagemNoTopico(3, "Aumento de 1 grau na temperatura.");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\r-1°C");
 
                 alterouEstado = true;
             }
@@ -341,8 +328,7 @@ void tratarJsonComando(const String &mensagem)
 
         else
         {
-            publicarMensagemNoTopico(3, "Comando inválido");
-            publicarMensagemNoTopico(3, "Utilize: \"diminuir_temp\": true");
+            publicarMensagemNoTopico(3, "Comando inválido\n\rUtilize: \"diminuir_temp\": true");
         }
     }
 
@@ -364,8 +350,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanAuto);
                 ac.send();
 
-                publicarMensagemNoTopico(3, "Comando enviado.");
-                publicarMensagemNoTopico(3, "Fan: Auto");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Auto");
 
                 alterouEstado = true;
             }
@@ -375,8 +360,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanHigh);
                 ac.send();
 
-                publicarMensagemNoTopico(3, "Comando enviado.");
-                publicarMensagemNoTopico(3, "Fan: High");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: High");
 
                 alterouEstado = true;
             }
@@ -385,8 +369,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanMed);
                 ac.send();
 
-                publicarMensagemNoTopico(3, "Comando enviado.");
-                publicarMensagemNoTopico(3, "Fan: Med");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Med");
 
                 alterouEstado = true;
             }
@@ -395,8 +378,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanLow);
                 ac.send();
 
-                publicarMensagemNoTopico(3, "Comando enviado.");
-                publicarMensagemNoTopico(3, "Fan: Low");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Low");
 
                 alterouEstado = true;
             }
@@ -405,8 +387,7 @@ void tratarJsonComando(const String &mensagem)
                 ac.setFanSpeed(kFujitsuAcFanQuiet);
                 ac.send();
 
-                publicarMensagemNoTopico(3, "Comando enviado.");
-                publicarMensagemNoTopico(3, "Fan: Quiet");
+                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Quiet");
 
                 alterouEstado = true;
             }
@@ -414,35 +395,40 @@ void tratarJsonComando(const String &mensagem)
 
         else
         {
-            publicarMensagemNoTopico(3, "Velocidade fan invalida");
+            publicarMensagemNoTopico(3, "Velocidade fan inválida");
         }
     }
 
     //*========================================================================================
 
-    //*                   ⇩ ⇩ ⇩      ENVIA E PRINTA STATUS DO AC      ⇩ ⇩ ⇩
+    //*                   ⇩ ⇩ ⇩      ENVIA STATUS DO AC      ⇩ ⇩ ⇩
 
     //*========================================================================================
 
     if (alterouEstado)
     {
+
+        JsonDocument resposta;
+
+        resposta["handshake"]["situacao"] = true;
+
+        String jsonResposta;
+
+        serializeJson(resposta, jsonResposta);
+
+        publicarMensagemNoTopico(4, jsonResposta.c_str());
+
         //* Status do AC  ⇩
         publicarMensagemNoTopico(1, ac.toString().c_str());
-
-        Serial.println();
-        Serial.println("========== ESTADO AC ==========");
-        Serial.println(ac.toString().c_str());
-        Serial.println("===============================");
     }
 
     else
     {
-        //* tópico "resposta"
-        publicarMensagemNoTopico(3, "Nenhum parâmetro válido recebido");
-        Serial.println(ac.toString().c_str());
-
-        //* tópico "status"  ⇩
-        publicarMensagemNoTopico(1, "Nenhum parâmetro válido recebido");
+        //* tópico "status"  ⇩⇩⇩
         publicarMensagemNoTopico(1, ac.toString().c_str());
+
+        //* tópico "resposta"  ⇩⇩⇩
+        publicarMensagemNoTopico(3, "Nenhum parâmetro válido recebido");
+        publicarMensagemNoTopico(3, ac.toString().c_str());
     }
 }
