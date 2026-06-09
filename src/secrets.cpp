@@ -96,7 +96,7 @@ SKFZaDT197F/rmfCjQ+yxeuQ+aufOdu5bnRow9tpBp9TaMe9ov1e5mgT5a/6QPDw
 
 const int AWS_IOT_PORT = 8883;
 
-const char *AWS_IOT_CLIENT_ID = "boo-esp32-ac1";
+const char *AWS_IOT_CLIENT_ID = "boo-esp32-ladoEsquerdo";
 
 // =============================
 //            TOPICOS
