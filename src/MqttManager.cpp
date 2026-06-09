@@ -140,7 +140,7 @@ void conectarMQTT()
                 }
             }
 
-            publicarMensagemNoTopico(0, "boo-esp32-ac1 conectado ao MQTT");
+            publicarMensagemNoTopico(1, "boo-esp32-ac1 conectado ao MQTT");
         }
         else
         {
