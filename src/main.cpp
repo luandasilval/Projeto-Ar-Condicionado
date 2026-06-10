@@ -1,466 +1,347 @@
-/*
-
-Autores:
-
-Augusto Vicente Santos
-Diogo de Andrade Chelles
-Guilherme Fellipe Alves Silveira
-Luanda da Silva Leite
-Lucas de Oliveira Donega
-
-Data de entrega do projeto: 5 de junho de 2026
-Versão: 1.0
-
-Programa: Controle do ar Condicionado Via MQTT
-Descrição: Controlaremos um ar condicionado via mqtt com um ESP32 e um infravermelho com LED, aplicando os modos FAN, AUTO e COOL, ligando e desligando o ar Condicionado. Quando um Json for enviado para o Nosso ESP32, esse microcontrolador vai ativar o infravermelho, enviando o sinal solicitado (pelo usuário) para o ar condicionado
-*/
-
-// main.cpp
-
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
 #include <ir_Fujitsu.h>
-
+#include <Preferences.h>
+ 
 #include "WiFiManager.h"
 #include "MqttManager.h"
 #include "DebugManager.h"
-
+ 
 //*========================================================================================
-//*                      ⇩ ⇩ ⇩      CONSTANTES E VARIÁVEIS      ⇩ ⇩ ⇩
+//*                      ⇩ ⇩ ⇩      TABELA DE COMANDOS      ⇩ ⇩ ⇩
+//*
+//*   Formato do JSON:  {"arCondicionadoX": {"comando": N}}
+//*
+//*   Valor │ Ação
+//*  ───────┼──────────────────────────────
+//*     1   │ Power (toggle liga/desliga)
+//*     2   │ Modo Auto
+//*     3   │ Modo Cool
+//*     4   │ Modo Fan
+//*     5   │ Fan Auto
+//*     6   │ Fan High
+//*     7   │ Fan Med
+//*     8   │ Fan Low
+//*     9   │ Fan Quiet
+//*    10   │ Temperatura +1°C
+//*    11   │ Temperatura -1°C
+//*
 //*========================================================================================
-
-const char TOPICO_COMANDO[] = "senai134/shared/projeto/ar_condicionado";
-
-const uint8_t PINO_AC1 = 13;
-const uint8_t PINO_AC2 = 16;
-const uint8_t PINO_AC3 = 27;
-const uint8_t PINO_AC4 = 26;
-
-int tempDefault = 24;
-
+ 
+enum Comando {
+    CMD_POWER        = 1,
+    CMD_MODO_AUTO    = 2,
+    CMD_MODO_COOL    = 3,
+    CMD_MODO_FAN     = 4,
+    CMD_FAN_AUTO     = 5,
+    CMD_FAN_HIGH     = 6,
+    CMD_FAN_MED      = 7,
+    CMD_FAN_LOW      = 8,
+    CMD_FAN_QUIET    = 9,
+    CMD_TEMP_SUBIR   = 10,
+    CMD_TEMP_DESCER  = 11
+};
+ 
 //*========================================================================================
-//*                           ⇩ ⇩ ⇩      INSTÂNCIAS      ⇩ ⇩ ⇩
+//*              ⇩ ⇩ ⇩      TÓPICO MQTT (lido da NVS)      ⇩ ⇩ ⇩
 //*========================================================================================
-
-IRFujitsuAC ac1(PINO_AC1);
-IRFujitsuAC ac2(PINO_AC2);
-IRFujitsuAC ac3(PINO_AC3);
-IRFujitsuAC ac4(PINO_AC4);
-
+ 
+Preferences prefs;
+char TOPICO_COMANDO[64];
+ 
+void carregarConfiguracoes()
+{
+    prefs.begin("config", false);
+    String topico = prefs.getString("topico", "senai134/shared/projeto/ar_condicionado");
+    topico.toCharArray(TOPICO_COMANDO, sizeof(TOPICO_COMANDO));
+    prefs.end();
+    debugInfo("Topico MQTT carregado: " + String(TOPICO_COMANDO));
+}
+ 
+void salvarTopico(const char* novoTopico)
+{
+    prefs.begin("config", false);
+    prefs.putString("topico", novoTopico);
+    prefs.end();
+}
+ 
+//*========================================================================================
+//*              ⇩ ⇩ ⇩      PINOS, INSTÂNCIAS E ESTADO      ⇩ ⇩ ⇩
+//*
+//*  ⚠️  ESP32-S3: GPIOs 26 e 27 não existem neste chip.
+//*     Ajuste os pinos conforme o hardware antes de compilar.
+//*     Pinos seguros: 1-21, 33-48 (evite 0, 19, 20, 45, 46)
+//*========================================================================================
+ 
+const uint8_t PINOS_AC[4] = { 13, 16, 33, 34 };
+ 
+IRFujitsuAC* acs[4];
+ 
+int  tempDefault[4] = { 24, 24, 24, 24 };
+bool powerEstado[4] = { false, false, false, false };
+ 
 //*========================================================================================
 //*                           ⇩ ⇩ ⇩      PROTÓTIPOS      ⇩ ⇩ ⇩
 //*========================================================================================
-
-void tratarMensagemRecebida(const char *topico, const String &mensagem);
-
-void tratarJsonComando(const String &mensagem);
-
+ 
+void tratarMensagemRecebida(const char* topico, const String& mensagem);
+void tratarJsonComando(const String& mensagem);
+int  indiceAcDoJson(JsonDocument& doc, JsonObject& obj);
+void publicarErro(const String& msg);
+void executarComando(int idx, int comando);
+ 
 //*========================================================================================
 //*                             ⇩ ⇩ ⇩      SETUP      ⇩ ⇩ ⇩
 //*========================================================================================
-
+ 
 void setup()
 {
-    ac1.begin();
-    ac2.begin();
-    ac3.begin();
-    ac4.begin();
-
     configurarDebug();
-
+    carregarConfiguracoes();
+ 
+    for (int i = 0; i < 4; i++)
+    {
+        acs[i] = new IRFujitsuAC(PINOS_AC[i]);
+        acs[i]->begin();
+        acs[i]->setModel(ARRAH2E);
+    }
+ 
     conectarWiFi();
-
     configurarMQTT();
-
     registrarCallbackMensagem(tratarMensagemRecebida);
-
     conectarMQTT();
-
-    ac1.setModel(ARRAH2E);
-    ac2.setModel(ARRAH2E);
-    ac3.setModel(ARRAH2E);
-    ac4.setModel(ARRAH2E);
-
+ 
     debugInfo("Controle Fujitsu inicializado");
-
-    publicarMensagemNoTopico(1, ac1.toString().c_str());
-    publicarMensagemNoTopico(1, ac2.toString().c_str());
-    publicarMensagemNoTopico(1, ac3.toString().c_str());
-    publicarMensagemNoTopico(1, ac4.toString().c_str());
+ 
+    for (int i = 0; i < 4; i++)
+    {
+        publicarMensagemNoTopico(1, acs[i]->toString().c_str());
+    }
 }
-
+ 
 //*========================================================================================
 //*                              ⇩ ⇩ ⇩      LOOP      ⇩ ⇩ ⇩
 //*========================================================================================
-
+ 
 void loop()
 {
     garantirWiFiConectado();
-
     garantirMQTTconectado();
-
     loopMQTT();
 }
-
+ 
 //*========================================================================================
-
 //*                         ⇩ ⇩ ⇩      CALLBACK MQTT      ⇩ ⇩ ⇩
-
 //*========================================================================================
-
-void tratarMensagemRecebida(const char *topico, const String &mensagem)
+ 
+void tratarMensagemRecebida(const char* topico, const String& mensagem)
 {
     debugInfo("========================================");
     debugInfo("Mensagem MQTT recebida");
     debugInfo("========================================");
-
+ 
     if (topico == nullptr)
     {
-        debugErro("Topico MQTT invalido");
+        publicarErro("Topico MQTT invalido");
         return;
     }
-
+ 
     debugInfo("Topico: " + String(topico));
     debugInfo("Payload: " + mensagem);
-
+ 
     if (strcmp(topico, TOPICO_COMANDO) == 0)
     {
         tratarJsonComando(mensagem);
         return;
     }
-
-    debugErro("Topico nao tratado: " + String(topico));
+ 
+    publicarErro("Topico nao tratado: " + String(topico));
 }
-
+ 
 //*========================================================================================
-
+//*                           ⇩ ⇩ ⇩      HELPERS      ⇩ ⇩ ⇩
+//*========================================================================================
+ 
+int indiceAcDoJson(JsonDocument& doc, JsonObject& obj)
+{
+    const char* chaves[4] = {
+        "arCondicionado1",
+        "arCondicionado2",
+        "arCondicionado3",
+        "arCondicionado4"
+    };
+ 
+    for (int i = 0; i < 4; i++)
+    {
+        if (doc[chaves[i]].is<JsonObject>())
+        {
+            obj = doc[chaves[i]];
+            return i;
+        }
+    }
+    return -1;
+}
+ 
+void publicarErro(const String& msg)
+{
+    debugErro(msg);
+    publicarMensagemNoTopico(3, msg.c_str());
+}
+ 
+//*========================================================================================
+//*                      ⇩ ⇩ ⇩      EXECUÇÃO DO COMANDO      ⇩ ⇩ ⇩
+//*========================================================================================
+ 
+void executarComando(int idx, int comando)
+{
+    IRFujitsuAC* ac  = acs[idx];
+    String nomeAc    = "AC" + String(idx + 1);
+    String descricao = "";
+ 
+    switch (comando)
+    {
+        //* ---- POWER (toggle) -----------------------------------------------
+        case CMD_POWER:
+            powerEstado[idx] = !powerEstado[idx];
+            if (powerEstado[idx])
+            {
+                ac->setCmd(kFujitsuAcCmdTurnOn);
+                ac->setSwing(kFujitsuAcSwingOff);
+                descricao = "Power: ON";
+            }
+            else
+            {
+                ac->setCmd(kFujitsuAcCmdTurnOff);
+                descricao = "Power: OFF";
+            }
+            break;
+ 
+        //* ---- MODOS -----------------------------------------------------------
+        case CMD_MODO_AUTO:
+            ac->setMode(kFujitsuAcModeAuto);
+            descricao = "Modo: Auto";
+            break;
+ 
+        case CMD_MODO_COOL:
+            ac->setMode(kFujitsuAcModeCool);
+            descricao = "Modo: Cool";
+            break;
+ 
+        case CMD_MODO_FAN:
+            ac->setMode(kFujitsuAcModeFan);
+            descricao = "Modo: Fan";
+            break;
+ 
+        //* ---- VELOCIDADE DO FAN -----------------------------------------------
+        case CMD_FAN_AUTO:
+            ac->setFanSpeed(kFujitsuAcFanAuto);
+            descricao = "Fan: Auto";
+            break;
+ 
+        case CMD_FAN_HIGH:
+            ac->setFanSpeed(kFujitsuAcFanHigh);
+            descricao = "Fan: High";
+            break;
+ 
+        case CMD_FAN_MED:
+            ac->setFanSpeed(kFujitsuAcFanMed);
+            descricao = "Fan: Med";
+            break;
+ 
+        case CMD_FAN_LOW:
+            ac->setFanSpeed(kFujitsuAcFanLow);
+            descricao = "Fan: Low";
+            break;
+ 
+        case CMD_FAN_QUIET:
+            ac->setFanSpeed(kFujitsuAcFanQuiet);
+            descricao = "Fan: Quiet";
+            break;
+ 
+        //* ---- TEMPERATURA +1°C ------------------------------------------------
+        case CMD_TEMP_SUBIR:
+            if (tempDefault[idx] < 30)
+            {
+                tempDefault[idx]++;
+                ac->setTemp(tempDefault[idx]);
+                descricao = "Temperatura: +" + String(tempDefault[idx]) + "C";
+            }
+            else
+            {
+                publicarErro(nomeAc + " | Limite maximo de temperatura atingido: 30C");
+                return;
+            }
+            break;
+ 
+        //* ---- TEMPERATURA -1°C ------------------------------------------------
+        case CMD_TEMP_DESCER:
+            if (tempDefault[idx] > 16)
+            {
+                tempDefault[idx]--;
+                ac->setTemp(tempDefault[idx]);
+                descricao = "Temperatura: -" + String(tempDefault[idx]) + "C";
+            }
+            else
+            {
+                publicarErro(nomeAc + " | Limite minimo de temperatura atingido: 16C");
+                return;
+            }
+            break;
+ 
+        //* ---- COMANDO DESCONHECIDO --------------------------------------------
+        default:
+            publicarErro("Comando invalido: " + String(comando) +
+                         " | Use valores de 1 a 11");
+            return;
+    }
+ 
+    //* Envia sinal IR uma unica vez, com todos os parametros ja configurados
+    ac->send();
+ 
+    debugInfo(nomeAc + " | " + descricao);
+ 
+    JsonDocument resposta;
+    resposta["handshake"]["situacao"] = true;
+    String jsonResposta;
+    serializeJson(resposta, jsonResposta);
+ 
+    publicarMensagemNoTopico(4, jsonResposta.c_str());
+    publicarMensagemNoTopico(1, ac->toString().c_str());
+}
+ 
+//*========================================================================================
 //*                        ⇩ ⇩ ⇩      TRATAMENTO JSON      ⇩ ⇩ ⇩
-
 //*========================================================================================
-
-void tratarJsonComando(const String &mensagem)
+ 
+void tratarJsonComando(const String& mensagem)
 {
     JsonDocument doc;
-
     DeserializationError erro = deserializeJson(doc, mensagem);
-
+ 
     if (erro)
     {
-        debugErro("Erro ao interpretar JSON");
-        debugErro(erro.c_str());
+        publicarErro("Erro ao interpretar JSON: " + String(erro.c_str()));
         return;
     }
-
+ 
     JsonObject acObjetoJson;
-
-    IRFujitsuAC *acSelecionado = nullptr;
-
-    String nomeAc;
-
-    if (doc["arCondicionado1"].is<JsonObject>())
+    int idx = indiceAcDoJson(doc, acObjetoJson);
+ 
+    if (idx == -1)
     {
-        acObjetoJson = doc["arCondicionado1"];
-        acSelecionado = &ac1;
-        nomeAc = "AC1";
-    }
-    else if (doc["arCondicionado2"].is<JsonObject>())
-    {
-        acObjetoJson = doc["arCondicionado2"];
-        acSelecionado = &ac2;
-        nomeAc = "AC2";
-    }
-    else if (doc["arCondicionado3"].is<JsonObject>())
-    {
-        acObjetoJson = doc["arCondicionado3"];
-        acSelecionado = &ac3;
-        nomeAc = "AC3";
-    }
-    else if (doc["arCondicionado4"].is<JsonObject>())
-    {
-        acObjetoJson = doc["arCondicionado4"];
-        acSelecionado = &ac4;
-        nomeAc = "AC4";
-    }
-    else
-    {
-        debugErro("Nenhum ar condicionado encontrado no JSON");
+        publicarErro("Nenhum ar condicionado encontrado no JSON");
         return;
     }
-
-    bool alterouEstado = false;
-
-    //*========================================================================================
-
-    //*                            ⇩ ⇩ ⇩      POWER      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    if (acObjetoJson["power"].is<bool>())
+ 
+    if (!acObjetoJson["comando"].is<int>())
     {
-        bool power = acObjetoJson["power"].as<bool>();
-
-        if (power)
-        {
-            acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
-            acSelecionado->setSwing(kFujitsuAcSwingOff);
-            acSelecionado->send();
-            publicarMensagemNoTopico(3, "Comando enviado.\n\rPower: ON");
-        }
-        else
-        {
-            acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
-            acSelecionado->send();
-            publicarMensagemNoTopico(3, "Comando enviado.\n\rPower: OFF");
-        }
-
-        alterouEstado = true;
+        publicarErro("Campo \"comando\" ausente ou invalido. Envie um inteiro de 1 a 11");
+        return;
     }
-
-    //*========================================================================================
-
-    //*                        ⇩ ⇩ ⇩      DEFINIÇÃO DOS MODOS      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    //! SERÃO IMPLEMENTADOS APENAS OS MODOS "0", "1" E "3".
-    //! FALAR COM GRUPO "IHM" SOBRE.
-    //! FALAR TAMBÉM SOBRE O STATUS DO APARELHO (SUGERIR UMA TELA DE STATUS DO AR CONDICIONADO)
-
-    if (acObjetoJson["modo"].is<int>())
-    {
-        int modo = acObjetoJson["modo"].as<int>();
-
-        if (modo == 0 || modo == 1 || modo == 3)
-        {
-            acSelecionado->setMode(modo);
-            acSelecionado->send();
-
-            if (modo == 0)
-            {
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rModo: Auto");
-            }
-
-            else if (modo == 1)
-            {
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rModo: Cool");
-            }
-
-            else if (modo == 3)
-            {
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rModo: Fan");
-            }
-
-            alterouEstado = true;
-        }
-        else
-        {
-            debugErro("Modo invalido\n\rUtilize: \"modo\": 0\n\r\"modo\": 1\n\rou\n\r\"modo\": 3");
-        }
-    }
-
-    //*========================================================================================
-
-    //*                     ⇩ ⇩ ⇩      DEFINIÇÃO DA TEMPERATURA      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    if (acObjetoJson["temperatura"].is<int>())
-    {
-        tempDefault = acObjetoJson["temperatura"].as<int>();
-
-        if (tempDefault >= 16 && tempDefault <= 30)
-        {
-            acSelecionado->setTemp(tempDefault);
-            acSelecionado->send();
-
-            debugInfo("Temperatura: " + String(tempDefault) + Serial.println("°C"));
-            publicarMensagemNoTopico(3, "Comando enviado.");
-
-            alterouEstado = true;
-        }
-        else
-        {
-            publicarMensagemNoTopico(3, "Temperatura fora da faixa (16°C - 30°C)");
-        }
-    }
-
-    //*========================================================================================
-
-    //*                ⇩ ⇩ ⇩      AUMENTAR TEMPERATURA DE 1 EM 1 GRAU      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    if (acObjetoJson["aumentar_temp"].is<bool>())
-    {
-        bool aumentar_temp = acObjetoJson["aumentar_temp"].as<bool>();
-
-        if (aumentar_temp)
-        {
-            tempDefault++;
-
-            if (tempDefault <= 30)
-            {
-                acSelecionado->setTemp(tempDefault);
-                acSelecionado->send();
-
-                debugInfo("Temperatura atual: " + String(tempDefault) + Serial.println("°C"));
-                publicarMensagemNoTopico(3, "Comando enviado.\n\r+1°C");
-
-                alterouEstado = true;
-            }
-
-            else
-            {
-                tempDefault = 30;
-
-                publicarMensagemNoTopico(3, "Limite de temperatura máxima atingido: 30°C");
-            }
-        }
-
-        else
-        {
-            publicarMensagemNoTopico(3, "Comando inválido\n\rUtilize: \"aumentar_temp\": true");
-        }
-    }
-
-    //*========================================================================================
-
-    //*                ⇩ ⇩ ⇩      DIMINUIR TEMPERATURA DE 1 EM 1 GRAU      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    if (acObjetoJson["diminuir_temp"].is<bool>())
-    {
-        bool diminuir_temp = acObjetoJson["diminuir_temp"].as<bool>();
-
-        if (diminuir_temp)
-        {
-            tempDefault--;
-
-            if (tempDefault >= 16)
-            {
-                acSelecionado->setTemp(tempDefault);
-                acSelecionado->send();
-
-                debugInfo("Temperatura atual: " + String(tempDefault) + Serial.println("°C"));
-                publicarMensagemNoTopico(3, "Comando enviado.\n\r-1°C");
-
-                alterouEstado = true;
-            }
-
-            else
-            {
-                tempDefault = 16;
-
-                publicarMensagemNoTopico(3, "Limite de temperatura mínima atingido: 16°C");
-            }
-        }
-
-        else
-        {
-            publicarMensagemNoTopico(3, "Comando inválido\n\rUtilize: \"diminuir_temp\": true");
-        }
-    }
-
-    //*========================================================================================
-
-    //*                                ⇩ ⇩ ⇩      FAN      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    if (acObjetoJson["fan"].is<int>())
-    {
-        int fan = acObjetoJson["fan"].as<int>();
-
-        if (fan >= 0 && fan <= 4)
-        {
-
-            if (fan == 0)
-            {
-                acSelecionado->setFanSpeed(kFujitsuAcFanAuto);
-                acSelecionado->send();
-
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Auto");
-
-                alterouEstado = true;
-            }
-
-            else if (fan == 1)
-            {
-                acSelecionado->setFanSpeed(kFujitsuAcFanHigh);
-                acSelecionado->send();
-
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: High");
-
-                alterouEstado = true;
-            }
-            else if (fan == 2)
-            {
-                acSelecionado->setFanSpeed(kFujitsuAcFanMed);
-                acSelecionado->send();
-
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Med");
-
-                alterouEstado = true;
-            }
-            else if (fan == 3)
-            {
-                acSelecionado->setFanSpeed(kFujitsuAcFanLow);
-                acSelecionado->send();
-
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Low");
-
-                alterouEstado = true;
-            }
-            else if (fan == 4)
-            {
-                acSelecionado->setFanSpeed(kFujitsuAcFanQuiet);
-                acSelecionado->send();
-
-                publicarMensagemNoTopico(3, "Comando enviado.\n\rFan: Quiet");
-
-                alterouEstado = true;
-            }
-        }
-
-        else
-        {
-            publicarMensagemNoTopico(3, "Velocidade fan inválida");
-        }
-    }
-
-    //*========================================================================================
-
-    //*                   ⇩ ⇩ ⇩      ENVIA STATUS DO AC      ⇩ ⇩ ⇩
-
-    //*========================================================================================
-
-    if (alterouEstado)
-    {
-
-        JsonDocument resposta;
-
-        resposta["handshake"]["situacao"] = true;
-
-        String jsonResposta;
-
-        serializeJson(resposta, jsonResposta);
-
-        publicarMensagemNoTopico(4, jsonResposta.c_str());
-
-        //* Status do AC  ⇩
-        publicarMensagemNoTopico(1, acSelecionado->toString().c_str());
-    }
-
-    else
-    {
-        //* tópico "status"  ⇩⇩⇩
-        publicarMensagemNoTopico(1, acSelecionado->toString().c_str());
-
-        //* tópico "resposta"  ⇩⇩⇩
-        publicarMensagemNoTopico(3, "Nenhum parâmetro válido recebido");
-        publicarMensagemNoTopico(3, acSelecionado->toString().c_str());
-    }
+ 
+    int comando = acObjetoJson["comando"].as<int>();
+ 
+    executarComando(idx, comando);
 }
