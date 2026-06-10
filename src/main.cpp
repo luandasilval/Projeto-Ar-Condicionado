@@ -83,18 +83,6 @@ void setup()
     ac3.setModel(ARRAH2E);
     ac4.setModel(ARRAH2E);
 
-    //* Estado inicial do Ar Condicionado  ⇩
-
-    // ac.setCmd(kFujitsuAcCmdTurnOn);
-
-    // ac.setMode(kFujitsuAcModeCool);
-
-    // ac.setTemp(tempDefault);
-
-    // ac.setFanSpeed(kFujitsuAcFanAuto);
-
-    // ac.setSwing(kFujitsuAcSwingOff);
-
     debugInfo("Controle Fujitsu inicializado");
 
     publicarMensagemNoTopico(1, ac1.toString().c_str());
@@ -287,7 +275,7 @@ void tratarJsonComando(const String &mensagem)
             acSelecionado->setTemp(tempDefault);
             acSelecionado->send();
 
-            debugInfo("Temperatura: " + Serial.print(tempDefault) + Serial.println("°C"));
+            debugInfo("Temperatura: " + String(tempDefault) + Serial.println("°C"));
             publicarMensagemNoTopico(3, "Comando enviado.");
 
             alterouEstado = true;
@@ -306,7 +294,7 @@ void tratarJsonComando(const String &mensagem)
 
     if (acObjetoJson["aumentar_temp"].is<bool>())
     {
-        int aumentar_temp = acObjetoJson["aumentar_temp"].as<bool>();
+        bool aumentar_temp = acObjetoJson["aumentar_temp"].as<bool>();
 
         if (aumentar_temp)
         {
@@ -345,7 +333,7 @@ void tratarJsonComando(const String &mensagem)
 
     if (acObjetoJson["diminuir_temp"].is<bool>())
     {
-        int diminuir_temp = acObjetoJson["diminuir_temp"].as<bool>();
+        bool diminuir_temp = acObjetoJson["diminuir_temp"].as<bool>();
 
         if (diminuir_temp)
         {
