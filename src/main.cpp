@@ -100,9 +100,9 @@ void setup()
 
     //* Estado inicial do Ar Condicionado  ⇩
 
-    publicarMensagemNoTopico(0, "Controle Fujitsu inicializado");
+    publicarSucessoComHandshake("Controle Fujitsu inicializado");
 
-    publicarMensagemNoTopico(0, ac1.toString().c_str());
+    publicarSucessoComHandshake(ac1.toString().c_str());
 }
 
 //*========================================================================================
@@ -235,7 +235,7 @@ void tratarJsonComando(const String &mensagem)
 
     //*========================================================================================
 
-    //*                            ⇩ ⇩ ⇩      recebimento      ⇩ ⇩ ⇩
+    //*                            ⇩ ⇩ ⇩      JSON RECEBIMENTO      ⇩ ⇩ ⇩
 
     //*========================================================================================
 
@@ -243,9 +243,11 @@ void tratarJsonComando(const String &mensagem)
     {
         int comando = objetoJsonAC["comando"].as<int>();
 
+        //! mudar o comando AC_POWER
+
         if (comando == AC_POWER)
         {
-            *powerSelecionado = !(*powerSelecionado); // inverte o estado atual
+            *powerSelecionado = !(*powerSelecionado);
 
             if (*powerSelecionado)
             {
@@ -321,7 +323,7 @@ void tratarJsonComando(const String &mensagem)
                 acSelecionado->setTemp(*tempSelecionado);
                 acSelecionado->send();
                 alterouEstado = true;
-                publicarSucessoComHandshake("Temp: + 1");
+                publicarSucessoComHandshake("Temp: - 1°C");
             }
             else
             {
@@ -337,7 +339,7 @@ void tratarJsonComando(const String &mensagem)
                 acSelecionado->setTemp(*tempSelecionado);
                 acSelecionado->send();
                 alterouEstado = true;
-                publicarSucessoComHandshake("Temp: - 1");
+                publicarSucessoComHandshake("Temp: + 1°C");
             }
             else
             {
@@ -354,16 +356,13 @@ void tratarJsonComando(const String &mensagem)
 
     if (alterouEstado)
     {
-        publicarSucessoComHandshake("Sucesso.");
-
         //* Status do AC  ⇩
-
         publicarMensagemNoTopico(0, acSelecionado->toString().c_str());
     }
 
     else
     {
-        publicarErroComHandshake("\n\rFalha ao receber comando.");
+        publicarErroComHandshake("Falha ao receber comando.");
     }
 }
 
