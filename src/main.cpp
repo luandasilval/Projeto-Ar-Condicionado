@@ -229,7 +229,7 @@ void tratarJsonComando(const String &mensagem)
             alterouEstado = true;
         }
 
-        if (comando == AC_AUTO_MODE)
+        else if (comando == AC_AUTO_MODE)
         {
             acSelecionado->setMode(kFujitsuAcModeAuto);
             acSelecionado->send();
@@ -274,10 +274,11 @@ void tratarJsonComando(const String &mensagem)
 
         else if (comando == AC_TEMP_DOWN)
         {
-            if (*tempSelecionado >= 16)
+            if (*tempSelecionado > 16)
             {
                 (*tempSelecionado)--;
                 acSelecionado->setTemp(*tempSelecionado);
+                acSelecionado->send();
                 alterouEstado = true;
             }
             else
@@ -288,10 +289,11 @@ void tratarJsonComando(const String &mensagem)
 
         else if (comando == AC_TEMP_UP)
         {
-            if (*tempSelecionado <= 30)
+            if (*tempSelecionado < 30)
             {
                 (*tempSelecionado)++;
                 acSelecionado->setTemp(*tempSelecionado);
+                acSelecionado->send();
                 alterouEstado = true;
             }
             else
@@ -317,7 +319,7 @@ void tratarJsonComando(const String &mensagem)
 
         serializeJsonPretty(docHandshake, handshakeFormatado);
 
-        publicarMensagemNoTopico(0, "sdufhaskjdfhlkasjh");
+        publicarMensagemNoTopico(0, handshakeFormatado.c_str());
 
         //* Status do AC  ⇩
 
@@ -326,12 +328,8 @@ void tratarJsonComando(const String &mensagem)
 
     else
     {
-        //* tópico "status"  ⇩⇩⇩
-        publicarMensagemNoTopico(1, acSelecionado->toString().c_str());
-
-        //* tópico "resposta"  ⇩⇩⇩
-        publicarMensagemNoTopico(3, "\n\rNenhum parâmetro válido recebido\n\r");
-        publicarMensagemNoTopico(3, acSelecionado->toString().c_str());
+        publicarMensagemNoTopico(0, "\n\rNenhum parâmetro válido recebido\n\r");
+        publicarMensagemNoTopico(0, acSelecionado->toString().c_str());
     }
 }
 
