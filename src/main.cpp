@@ -255,6 +255,9 @@ void tratarJsonComando(const String &mensagem)
             acSelecionado->send();
             alterouEstado = true;
         }
+
+        //! É NECESSÁRIO IMPLEMENTAR UMA TEMPERATURA PARA CADA AR CONDICIONADO
+
         else if (comando == AC_TEMP_DOWN)
         {
             tempDefault--;
@@ -271,6 +274,9 @@ void tratarJsonComando(const String &mensagem)
 
             alterouEstado = true;
         }
+
+        //! É NECESSÁRIO IMPLEMENTAR UMA TEMPERATURA PARA CADA AR CONDICIONADO
+
         else if (comando == AC_TEMP_UP)
         {
             tempDefault++;
