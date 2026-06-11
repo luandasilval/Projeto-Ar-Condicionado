@@ -180,7 +180,8 @@ void conectarMQTT()
                 }
             }
 
-            publicarMensagemNoTopico(0, "ESP32 conectado ao MQTT");
+            debugInfo(
+                "ESP32 conectado ao MQTT");
         }
 
         else
