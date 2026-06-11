@@ -36,7 +36,11 @@ const char TOPICO_COMANDO[] = "senai134/shared/projeto/ar_condicionado";
 const uint8_t PINO_AC1 = 13;
 const uint8_t PINO_AC2 = 16;
 
-int tempDefault = 24;
+int tempAC1 = 24;
+int tempAC2 = 24;
+
+bool powerAC1 = false;
+bool powerAC2 = false;
 
 //*========================================================================================
 //*                           ⇩ ⇩ ⇩      INSTÂNCIAS      ⇩ ⇩ ⇩
@@ -163,18 +167,26 @@ void tratarJsonComando(const String &mensagem)
 
     IRFujitsuAC *acSelecionado = nullptr;
 
+    bool *powerSelecionado = nullptr;
+
+    int *tempSelecionado = nullptr;
+
     String nomeAc;
 
     if (doc["arCondicionado1"].is<JsonObject>())
     {
         objetoJsonAC = doc["arCondicionado1"];
         acSelecionado = &ac1;
+        powerSelecionado = &powerAC1;
+        tempSelecionado = &tempAC1;
         nomeAc = "AC1";
     }
     else if (doc["arCondicionado2"].is<JsonObject>())
     {
         objetoJsonAC = doc["arCondicionado2"];
         acSelecionado = &ac2;
+        powerSelecionado = &powerAC2;
+        tempSelecionado = &tempAC2;
         nomeAc = "AC2";
     }
     else
@@ -199,18 +211,22 @@ void tratarJsonComando(const String &mensagem)
 
         if (comando == AC_POWER)
         {
-            acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
-            acSelecionado->send();
-            publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: ON\n\r");
-        }
+            *powerSelecionado = !(*powerSelecionado); // inverte o estado atual
 
-        //! APAGAR ELSE ABAIXO
+            if (*powerSelecionado)
+            {
+                acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
+                acSelecionado->send();
+                publicarMensagemNoTopico(3, "Power: ON");
+            }
+            else
+            {
+                acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
+                acSelecionado->send();
+                publicarMensagemNoTopico(3, "Power: OFF");
+            }
 
-        else
-        {
-            acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
-            acSelecionado->send();
-            publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: OFF\n\r");
+            alterouEstado = true;
         }
 
         if (comando == AC_AUTO_MODE)
@@ -256,42 +272,32 @@ void tratarJsonComando(const String &mensagem)
             alterouEstado = true;
         }
 
-        //! É NECESSÁRIO IMPLEMENTAR UMA TEMPERATURA PARA CADA AR CONDICIONADO
-
         else if (comando == AC_TEMP_DOWN)
         {
-            tempDefault--;
-
-            if (tempDefault >= 16 && tempDefault <= 30)
+            if (*tempSelecionado >= 16)
             {
-                acSelecionado->setTemp(tempDefault);
-                acSelecionado->send();
+                (*tempSelecionado)--;
+                acSelecionado->setTemp(*tempSelecionado);
+                alterouEstado = true;
             }
             else
             {
-                tempDefault = 16;
+                publicarMensagemNoTopico(3, "Limite minimo de temperatura atingido: 16C");
             }
-
-            alterouEstado = true;
         }
-
-        //! É NECESSÁRIO IMPLEMENTAR UMA TEMPERATURA PARA CADA AR CONDICIONADO
 
         else if (comando == AC_TEMP_UP)
         {
-            tempDefault++;
-
-            if (tempDefault <= 30)
+            if (*tempSelecionado <= 30)
             {
-                acSelecionado->setTemp(tempDefault);
-                acSelecionado->send();
+                (*tempSelecionado)++;
+                acSelecionado->setTemp(*tempSelecionado);
+                alterouEstado = true;
             }
             else
             {
-                tempDefault = 30;
+                publicarMensagemNoTopico(3, "Limite maximo de temperatura atingido: 30C");
             }
-
-            alterouEstado = true;
         }
     }
 
@@ -410,6 +416,22 @@ void tratarJsonComando(const String &mensagem)
 
 //     default:
 //      X
+// }
+
+// if (comando == AC_POWER)
+// {
+//     acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
+//     acSelecionado->send();
+//     publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: ON\n\r");
+// }
+
+// //! APAGAR ELSE ABAIXO
+
+// else
+// {
+//     acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
+//     acSelecionado->send();
+//     publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: OFF\n\r");
 // }
 
 //*======================================================================================================================================
