@@ -122,12 +122,11 @@ const char *AWS_IOT_CLIENT_ID = "boo-esp32-esp1";
 
 const char *TOPICOS_PUBLICAR[] =
     {
-        "senai134/shared/projeto/ar_condicionado",
         "senai134/shared/projeto/ar_condicionado/status",
         "senai134/shared/projeto/ar_condicionado/handshake",
         "senai134/equipe/boo/devices/ar_condicionado"};
 
-const int TOTAL_TOPICOS_PUBLICAR = 4;
+const int TOTAL_TOPICOS_PUBLICAR = 3;
 
 const char *TOPICOS_RECEBER[] =
     {

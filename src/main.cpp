@@ -71,6 +71,11 @@ void tratarMensagemRecebida(const char *topico, const String &mensagem);
 
 void tratarJsonComando(const String &mensagem);
 
+void publicarErroComHandshake(const String &mensagem);
+
+void publicarSucessoComHandshake(const String &mensagem);
+
+
 //*========================================================================================
 //*                             ⇩ ⇩ ⇩      SETUP      ⇩ ⇩ ⇩
 //*========================================================================================
@@ -95,10 +100,9 @@ void setup()
 
     //* Estado inicial do Ar Condicionado  ⇩
 
-    publicarMensagemNoTopico(3, "Controle Fujitsu inicializado");
+    publicarMensagemNoTopico(0, "Controle Fujitsu inicializado");
 
-    publicarMensagemNoTopico(1, ac1.toString().c_str());
-    publicarMensagemNoTopico(1, ac2.toString().c_str());
+    publicarMensagemNoTopico(0, ac1.toString().c_str());
 }
 
 //*========================================================================================
@@ -112,6 +116,38 @@ void loop()
     garantirMQTTconectado();
 
     loopMQTT();
+}
+
+//*========================================================================================
+
+//*                         ⇩ ⇩ ⇩      HANDSHAKE ERRO      ⇩ ⇩ ⇩
+
+//*========================================================================================
+
+void publicarErroComHandshake(const String &mensagem)
+{
+    publicarMensagemNoTopico(0, mensagem.c_str());
+ 
+    JsonDocument docHandshake;
+    docHandshake["statusComando"]["comando"]  = false;
+    docHandshake["statusComando"]["situacao"] = mensagem;
+ 
+    String handshakeFormatado;
+    serializeJsonPretty(docHandshake, handshakeFormatado);
+    publicarMensagemNoTopico(0, handshakeFormatado.c_str());
+}
+
+void publicarSucessoComHandshake(const String &mensagem)
+{
+    publicarMensagemNoTopico(0, mensagem.c_str());
+
+    JsonDocument docHandshake;
+    docHandshake["statusComando"]["comando"]  = true;
+    docHandshake["statusComando"]["situacao"] = mensagem;
+
+    String handshakeFormatado;
+    serializeJsonPretty(docHandshake, handshakeFormatado);
+    publicarMensagemNoTopico(0, handshakeFormatado.c_str());
 }
 
 //*========================================================================================
@@ -191,7 +227,7 @@ void tratarJsonComando(const String &mensagem)
     }
     else
     {
-        publicarMensagemNoTopico(0, "\n\rNenhum ar condicionado encontrado no JSON\n\r");
+        publicarErroComHandshake("\n\rNenhum ar condicionado encontrado no JSON\n\r");
         return;
     }
 
@@ -199,11 +235,9 @@ void tratarJsonComando(const String &mensagem)
 
     //*========================================================================================
 
-    //*                            ⇩ ⇩ ⇩      POWER      ⇩ ⇩ ⇩
+    //*                            ⇩ ⇩ ⇩      recebimento      ⇩ ⇩ ⇩
 
     //*========================================================================================
-
-    //! FAZER TRATAMENTO BOTÃO TOGGLE
 
     if (objetoJsonAC["comando"].is<int>())
     {
@@ -217,13 +251,13 @@ void tratarJsonComando(const String &mensagem)
             {
                 acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
                 acSelecionado->send();
-                publicarMensagemNoTopico(3, "Power: ON");
+                publicarSucessoComHandshake("Power: ON");
             }
             else
             {
                 acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
                 acSelecionado->send();
-                publicarMensagemNoTopico(3, "Power: OFF");
+                publicarSucessoComHandshake("Power: OFF");
             }
 
             alterouEstado = true;
@@ -234,42 +268,49 @@ void tratarJsonComando(const String &mensagem)
             acSelecionado->setMode(kFujitsuAcModeAuto);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Modo: Auto");
         }
         else if (comando == AC_COOL_MODE)
         {
             acSelecionado->setMode(kFujitsuAcModeCool);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Modo: Cool");
         }
         else if (comando == AC_FAN_MODE)
         {
             acSelecionado->setMode(kFujitsuAcModeFan);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Modo: Fan");
         }
         else if (comando == AC_FAN_LOW)
         {
             acSelecionado->setFanSpeed(kFujitsuAcFanLow);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Fan: Low");
         }
         else if (comando == AC_FAN_MEDIUM)
         {
             acSelecionado->setFanSpeed(kFujitsuAcFanMed);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Fan: Med");
         }
         else if (comando == AC_FAN_HIGH)
         {
             acSelecionado->setFanSpeed(kFujitsuAcFanHigh);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Fan: High");
         }
         else if (comando == AC_FAN_QUIET)
         {
             acSelecionado->setFanSpeed(kFujitsuAcFanQuiet);
             acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Fan: Quiet");
         }
 
         else if (comando == AC_TEMP_DOWN)
@@ -280,10 +321,11 @@ void tratarJsonComando(const String &mensagem)
                 acSelecionado->setTemp(*tempSelecionado);
                 acSelecionado->send();
                 alterouEstado = true;
+                publicarSucessoComHandshake("Temp: + 1");
             }
             else
             {
-                publicarMensagemNoTopico(3, "Limite minimo de temperatura atingido: 16C");
+                publicarErroComHandshake("Limite minimo de temperatura atingido: 16C");
             }
         }
 
@@ -295,10 +337,11 @@ void tratarJsonComando(const String &mensagem)
                 acSelecionado->setTemp(*tempSelecionado);
                 acSelecionado->send();
                 alterouEstado = true;
+                publicarSucessoComHandshake("Temp: - 1");
             }
             else
             {
-                publicarMensagemNoTopico(3, "Limite maximo de temperatura atingido: 30C");
+                publicarErroComHandshake("Limite maximo de temperatura atingido: 30C");
             }
         }
     }
@@ -311,15 +354,7 @@ void tratarJsonComando(const String &mensagem)
 
     if (alterouEstado)
     {
-        JsonDocument docHandshake;
-
-        docHandshake["statusComando"]["comando"] = true;
-
-        String handshakeFormatado;
-
-        serializeJsonPretty(docHandshake, handshakeFormatado);
-
-        publicarMensagemNoTopico(0, handshakeFormatado.c_str());
+        publicarSucessoComHandshake("Sucesso.");
 
         //* Status do AC  ⇩
 
@@ -328,8 +363,7 @@ void tratarJsonComando(const String &mensagem)
 
     else
     {
-        publicarMensagemNoTopico(0, "\n\rNenhum parâmetro válido recebido\n\r");
-        publicarMensagemNoTopico(0, acSelecionado->toString().c_str());
+        publicarErroComHandshake("\n\rFalha ao receber comando.");
     }
 }
 
@@ -357,82 +391,3 @@ void tratarJsonComando(const String &mensagem)
  */
 
 //*======================================================================================================================================
-
-//! NÃO FINALIZADO ⇩⇩⇩
-
-// switch(comando)
-// {
-//     case AC_POWER:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_AUTO_MODE:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_COOL_MODE:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_MODE:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_LOW:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_MEDIUM:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_HIGH:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_QUIET:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_TEMP_DOWN:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_TEMP_UP:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     default:
-//      X
-// }
-
-// if (comando == AC_POWER)
-// {
-//     acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
-//     acSelecionado->send();
-//     publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: ON\n\r");
-// }
-
-// //! APAGAR ELSE ABAIXO
-
-// else
-// {
-//     acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
-//     acSelecionado->send();
-//     publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: OFF\n\r");
-// }
-
-//*======================================================================================================================================
-
-//* CLAUDE:
-//* quero que toda vez que eu receber o valor "0" o ar condicionado ligue ou desligue. mostre-me como fica essa parte do código.
