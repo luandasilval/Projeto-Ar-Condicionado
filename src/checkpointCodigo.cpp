@@ -45,20 +45,6 @@ int tempDefault = 24;
 IRFujitsuAC ac1(PINO_AC1);
 IRFujitsuAC ac2(PINO_AC2);
 
-enum valoresDosComandos
-{
-    AC_POWER = 0,
-    AC_AUTO_MODE = 1,
-    AC_COOL_MODE = 2,
-    AC_FAN_MODE = 3,
-    AC_FAN_LOW = 4,
-    AC_FAN_MEDIUM = 5,
-    AC_FAN_HIGH = 6,
-    AC_FAN_QUIET = 7,
-    AC_TEMP_DOWN = 8,
-    AC_TEMP_UP = 9
-};
-
 //*========================================================================================
 //*                           ⇩ ⇩ ⇩      PROTÓTIPOS      ⇩ ⇩ ⇩
 //*========================================================================================
@@ -159,7 +145,7 @@ void tratarJsonComando(const String &mensagem)
         return;
     }
 
-    JsonObject objetoJsonAC;
+    JsonObject acObjetoJson;
 
     IRFujitsuAC *acSelecionado = nullptr;
 
@@ -167,19 +153,19 @@ void tratarJsonComando(const String &mensagem)
 
     if (doc["arCondicionado1"].is<JsonObject>())
     {
-        objetoJsonAC = doc["arCondicionado1"];
+        acObjetoJson = doc["arCondicionado1"];
         acSelecionado = &ac1;
         nomeAc = "AC1";
     }
     else if (doc["arCondicionado2"].is<JsonObject>())
     {
-        objetoJsonAC = doc["arCondicionado2"];
+        acObjetoJson = doc["arCondicionado2"];
         acSelecionado = &ac2;
         nomeAc = "AC2";
     }
     else
     {
-        publicarMensagemNoTopico(0, "\n\rNenhum ar condicionado encontrado no JSON\n\r");
+        debugErro("Nenhum ar condicionado encontrado no JSON");
         return;
     }
 
@@ -193,19 +179,16 @@ void tratarJsonComando(const String &mensagem)
 
     //! FAZER TRATAMENTO BOTÃO TOGGLE
 
-    if (objetoJsonAC["comando"].is<int>())
+    if (acObjetoJson["power"].is<int>())
     {
-        int comando = objetoJsonAC["comando"].as<int>();
+        int power = acObjetoJson["power"].as<int>();
 
-        if (comando == AC_POWER)
+        if (power == 0)
         {
             acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
             acSelecionado->send();
             publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: ON\n\r");
         }
-
-        //! APAGAR ELSE ABAIXO
-
         else
         {
             acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
@@ -213,65 +196,87 @@ void tratarJsonComando(const String &mensagem)
             publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rPower: OFF\n\r");
         }
 
-        if (comando == AC_AUTO_MODE)
-        {
-            acSelecionado->setMode(kFujitsuAcModeAuto);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_COOL_MODE)
-        {
-            acSelecionado->setMode(kFujitsuAcModeCool);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_FAN_MODE)
-        {
-            acSelecionado->setMode(kFujitsuAcModeFan);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_FAN_LOW)
-        {
-            acSelecionado->setFanSpeed(kFujitsuAcFanLow);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_FAN_MEDIUM)
-        {
-            acSelecionado->setFanSpeed(kFujitsuAcFanMed);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_FAN_HIGH)
-        {
-            acSelecionado->setFanSpeed(kFujitsuAcFanHigh);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_FAN_QUIET)
-        {
-            acSelecionado->setFanSpeed(kFujitsuAcFanQuiet);
-            acSelecionado->send();
-            alterouEstado = true;
-        }
-        else if (comando == AC_TEMP_DOWN)
-        {
-            tempDefault--;
+        alterouEstado = true;
+    }
 
-            if (tempDefault >= 16 && tempDefault <= 30)
+    //*========================================================================================
+
+    //*                        ⇩ ⇩ ⇩      DEFINIÇÃO DOS MODOS      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    //! SERÃO IMPLEMENTADOS APENAS OS MODOS "0", "1" E "3".
+    //! FALAR COM GRUPO "IHM" SOBRE.
+    //! FALAR TAMBÉM SOBRE O STATUS DO APARELHO (SUGERIR UMA TELA DE STATUS DO AR CONDICIONADO)
+
+    if (acObjetoJson["modo"].is<int>())
+    {
+        int modo = acObjetoJson["modo"].as<int>();
+
+        if (modo == 1 || modo == 2 || modo == 3)
+        {
+            acSelecionado->setMode(modo);
+            acSelecionado->send();
+
+            if (modo == 0)
             {
-                acSelecionado->setTemp(tempDefault);
-                acSelecionado->send();
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rModo: Auto");
             }
-            else
+
+            else if (modo == 1)
             {
-                tempDefault = 16;
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rModo: Cool");
+            }
+
+            else if (modo == 3)
+            {
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rModo: Fan");
             }
 
             alterouEstado = true;
         }
-        else if (comando == AC_TEMP_UP)
+        else
+        {
+            publicarMensagemNoTopico(3, "\n\rModo invalido\n\rUtilize: \"modo\": 0\n\r\"modo\": 1\n\rou\n\r\"modo\": 3");
+        }
+    }
+
+    //*========================================================================================
+
+    //*                     ⇩ ⇩ ⇩      DEFINIÇÃO DA TEMPERATURA      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (acObjetoJson["temperatura"].is<int>())
+    {
+        tempDefault = acObjetoJson["temperatura"].as<int>();
+
+        if (tempDefault >= 16 && tempDefault <= 30)
+        {
+            acSelecionado->setTemp(tempDefault);
+            acSelecionado->send();
+
+            publicarMensagemNoTopico(3, "\n\rComando enviado.");
+
+            alterouEstado = true;
+        }
+        else
+        {
+            publicarMensagemNoTopico(3, "\n\rTemperatura fora da faixa (16°C - 30°C)");
+        }
+    }
+
+    //*========================================================================================
+
+    //*                ⇩ ⇩ ⇩      AUMENTAR TEMPERATURA DE 1 EM 1 GRAU      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (acObjetoJson["aumentar_temp"].is<bool>())
+    {
+        int aumentar_temp = acObjetoJson["aumentar_temp"].as<bool>();
+
+        if (aumentar_temp)
         {
             tempDefault++;
 
@@ -279,13 +284,128 @@ void tratarJsonComando(const String &mensagem)
             {
                 acSelecionado->setTemp(tempDefault);
                 acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\r+1°C");
+
+                alterouEstado = true;
             }
+
             else
             {
                 tempDefault = 30;
+
+                publicarMensagemNoTopico(3, "\n\rLimite de temperatura máxima atingido: 30°C");
+            }
+        }
+
+        else
+        {
+            publicarMensagemNoTopico(3, "\n\rComando inválido\n\rUtilize: \"aumentar_temp\": true");
+        }
+    }
+
+    //*========================================================================================
+
+    //*                ⇩ ⇩ ⇩      DIMINUIR TEMPERATURA DE 1 EM 1 GRAU      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (acObjetoJson["diminuir_temp"].is<bool>())
+    {
+        int diminuir_temp = acObjetoJson["diminuir_temp"].as<bool>();
+
+        if (diminuir_temp)
+        {
+            tempDefault--;
+
+            if (tempDefault >= 16)
+            {
+                acSelecionado->setTemp(tempDefault);
+                acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\r-1°C");
+
+                alterouEstado = true;
             }
 
-            alterouEstado = true;
+            else
+            {
+                tempDefault = 16;
+
+                publicarMensagemNoTopico(3, "\n\rLimite de temperatura mínima atingido: 16°C");
+            }
+        }
+
+        else
+        {
+            publicarMensagemNoTopico(3, "\n\rComando inválido\n\rUtilize: \"diminuir_temp\": true");
+        }
+    }
+
+    //*========================================================================================
+
+    //*                                ⇩ ⇩ ⇩      FAN      ⇩ ⇩ ⇩
+
+    //*========================================================================================
+
+    if (acObjetoJson["fan"].is<int>())
+    {
+        int fan = acObjetoJson["fan"].as<int>();
+
+        if (fan >= 0 && fan <= 4)
+        {
+
+            if (fan == 0)
+            {
+                acSelecionado->setFanSpeed(kFujitsuAcFanAuto);
+                acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rFan: Auto");
+
+                alterouEstado = true;
+            }
+
+            else if (fan == 1)
+            {
+                acSelecionado->setFanSpeed(kFujitsuAcFanHigh);
+                acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rFan: High");
+
+                alterouEstado = true;
+            }
+            else if (fan == 2)
+            {
+                acSelecionado->setFanSpeed(kFujitsuAcFanMed);
+                acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rFan: Med");
+
+                alterouEstado = true;
+            }
+            else if (fan == 3)
+            {
+                acSelecionado->setFanSpeed(kFujitsuAcFanLow);
+                acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rFan: Low");
+
+                alterouEstado = true;
+            }
+            else if (fan == 4)
+            {
+                acSelecionado->setFanSpeed(kFujitsuAcFanQuiet);
+                acSelecionado->send();
+
+                publicarMensagemNoTopico(3, "\n\rComando enviado.\n\rFan: Quiet");
+
+                alterouEstado = true;
+            }
+        }
+
+        else
+        {
+            publicarMensagemNoTopico(3, "\n\rVelocidade fan inválida");
         }
     }
 
@@ -299,13 +419,13 @@ void tratarJsonComando(const String &mensagem)
     {
         JsonDocument docHandshake;
 
-        docHandshake["statusComando"]["comando"] = true;
+        docHandshake["handshake"]["situacao"] = true;
 
         String handshakeFormatado;
 
         serializeJsonPretty(docHandshake, handshakeFormatado);
 
-        publicarMensagemNoTopico(0, "sdufhaskjdfhlkasjh");
+        publicarMensagemNoTopico(0, "asdlkjfskakdsfjlskadjfl");
 
         //* Status do AC  ⇩
 
@@ -322,91 +442,3 @@ void tratarJsonComando(const String &mensagem)
         publicarMensagemNoTopico(3, acSelecionado->toString().c_str());
     }
 }
-
-//*======================================================================================================================================
-
-//* COMANDOS JSON  ⇩⇩
-
-/**
- * * {
- * *    "arCondicionadoX": {
- * *       "comando": X
- * *    }
- * * }
- */
-
-//* HANDSHAKE  ⇩⇩
-
-/**
- * * {
- * *    "statusComando": {
- * *       "comando": X,
- * *       "situacao": X
- * *    }
- * * }
- */
-
-//*======================================================================================================================================
-
-//! NÃO FINALIZADO ⇩⇩⇩
-
-// switch(comando)
-// {
-//     case AC_POWER:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_AUTO_MODE:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_COOL_MODE:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_MODE:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_LOW:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_MEDIUM:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_HIGH:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_FAN_QUIET:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_TEMP_DOWN:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     case AC_TEMP_UP:
-//     acSelecionado->setMode(kFujitsuAcModeAuto);
-//     acSelecionado->send();
-//     break;
-
-//     default:
-//      X
-// }
-
-//*======================================================================================================================================
-
-//* CLAUDE:
-//* quero que toda vez que eu receber o valor "0" o ar condicionado ligue ou desligue. mostre-me como fica essa parte do código.

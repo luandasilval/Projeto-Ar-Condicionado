@@ -10,6 +10,24 @@ const char *WIFI_SSID = "SALA 09";
 
 const char *WIFI_SENHA = "info@134";
 
+// =================================================
+// MQTT
+// =================================================
+
+const char *MQTT_BROKER = "107e15e20836472e81716949f0efe4fa.s1.eu.hivemq.cloud"; //"broker.hivemq.com";
+
+const int MQTT_PORTA = 8883; // 1883;
+
+const char *MQTT_CLIENT_ID = "esp32_diogo_chelles";
+
+const char *MQTT_USUARIO = "diogo";
+
+const char *MQTT_SENHA = "Senai@134";
+
+const bool MQTT_TLS = true; // false;         // desabiltando segurança
+
+const char MQTT_CERTIFICADO_CA[] PROGMEM = "";
+
 // =============================
 //            AWS
 // =============================
@@ -96,7 +114,7 @@ SKFZaDT197F/rmfCjQ+yxeuQ+aufOdu5bnRow9tpBp9TaMe9ov1e5mgT5a/6QPDw
 
 const int AWS_IOT_PORT = 8883;
 
-const char *AWS_IOT_CLIENT_ID = "boo-esp32-ladoEsquerdo";
+const char *AWS_IOT_CLIENT_ID = "boo-esp32-esp1";
 
 // =============================
 //            TOPICOS
@@ -104,20 +122,18 @@ const char *AWS_IOT_CLIENT_ID = "boo-esp32-ladoEsquerdo";
 
 const char *TOPICOS_PUBLICAR[] =
     {
-        "senai134/equipe/boo/devices/ar_condicionado",
+        "senai134/shared/projeto/ar_condicionado",
         "senai134/shared/projeto/ar_condicionado/status",
-        "senai134/shared/projeto/ar_condicionado/log",
-        "senai134/shared/projeto/ar_condicionado/resposta"
-        "senai134/shared/projeto/ar_condicionado/handshake"};
+        "senai134/shared/projeto/ar_condicionado/handshake",
+        "senai134/equipe/boo/devices/ar_condicionado"};
 
-const int TOTAL_TOPICOS_PUBLICAR = 5;
+const int TOTAL_TOPICOS_PUBLICAR = 4;
 
 const char *TOPICOS_RECEBER[] =
     {
-        "senai134/shared/projeto/ar_condicionado",
-        "senai134/shared/projeto/ar_condicionado/ac_1"};
+        "senai134/shared/projeto/ar_condicionado"};
 
-const int TOTAL_TOPICOS_RECEBER = 2;
+const int TOTAL_TOPICOS_RECEBER = 1;
 
 // =============================
 //            DEBUG

@@ -79,19 +79,54 @@ void configurarMQTT()
     debugInfo(" Configurando MQTT...");
     debugInfo("=============================================================================");
 
-    debugInfo("Modo selecionado: AWS");
+    if (USAR_AWS_IOT)
+    {
+        debugInfo("Modo selecionado: MQTT com TLS.");
 
-    wifiClientSecure.setCACert(AWS_CERTIFICADO_CA);
-    wifiClientSecure.setCertificate(AWS_CERTIFICADO_CRT);
-    wifiClientSecure.setPrivateKey(AWS_CERTIFICADO_PRIVATE);
+        wifiClientSecure.setCACert(AWS_CERTIFICADO_CA);
+        wifiClientSecure.setCertificate(AWS_CERTIFICADO_CRT);
+        wifiClientSecure.setPrivateKey(AWS_CERTIFICADO_PRIVATE);
 
-    mqttClient.setClient(wifiClientSecure);
-    mqttClient.setServer(AWS_IOT_ENDPOINT, AWS_IOT_PORT);
+        mqttClient.setClient(wifiClientSecure);
+        mqttClient.setServer(AWS_IOT_ENDPOINT, AWS_IOT_PORT);
 
-    debugInfo("Endpoint AWS IoT: " + String(AWS_IOT_ENDPOINT));
-    debugInfo("Porta AWS IoT: " + String(AWS_IOT_PORT));
+        debugInfo("Endpoint AWS IoT: " + String(AWS_IOT_ENDPOINT));
+        debugInfo("Porta AWS IoT: " + String(AWS_IOT_PORT));
+    }
+    else if (MQTT_TLS)
+    {
+        debugInfo("Modo selecionado: MQTT com TLS.");
 
-    mqttClient.setCallback(callbackInternoMQTT); //! Quando chegar mensagem, execute a função "callbackInternoMQTT"
+        if (strlen(MQTT_CERTIFICADO_CA) > 100)
+        {
+            debugInfo("Certificado CA do broker MQTT configurado.");
+            wifiClientSecure.setCACert(MQTT_CERTIFICADO_CA);
+        }
+        else
+        {
+            debugErro("Certificado não configurado. Usando setInsecure apenas para teste.");
+            wifiClientSecure.setInsecure();
+        }
+
+        mqttClient.setClient(wifiClientSecure);
+        mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
+
+        debugInfo("Broker MQTT: " + String(MQTT_BROKER));
+        debugInfo("Porta MQTT: " + String(MQTT_PORTA));
+    }
+
+    else // Conectar ao broker público sem certificado
+    {
+        debugInfo("Modo Selecionado: MQTT sem TLS.");
+
+        mqttClient.setClient(wifiCliente);
+        mqttClient.setServer(MQTT_BROKER, MQTT_PORTA);
+
+        debugInfo("Broker MQTT: " + String(MQTT_BROKER));
+        debugInfo("Porta MQTT: " + String(MQTT_PORTA));
+    }
+
+    mqttClient.setCallback(callbackInternoMQTT); //* Quando chegar mensagem, execute a função "callbackInternoMQTT"
     debugInfo("Callback interno no MQTT configurado");
 }
 
@@ -113,7 +148,12 @@ void conectarMQTT()
     while (!mqttClient.connected() && tentativasMQTT < maxTentativasMQTT)
     {
         debugInfo("Tentando conectar ao broker MQTT. Tentativa: " + String(tentativasMQTT));
-        bool conectado = mqttClient.connect(AWS_IOT_CLIENT_ID);
+        bool conectado = false;
+
+        if (USAR_AWS_IOT)
+        {
+            conectado = mqttClient.connect(AWS_IOT_CLIENT_ID);
+        }
 
         if (conectado)
         {
@@ -140,8 +180,9 @@ void conectarMQTT()
                 }
             }
 
-            publicarMensagemNoTopico(1, "boo-esp32-ac1 conectado ao MQTT");
+            publicarMensagemNoTopico(0, "ESP32 conectado ao MQTT");
         }
+
         else
         {
             debugErro("Falha ao conectar no MQTT. Código de erro: " + String(mqttClient.state()));

@@ -5,6 +5,24 @@
 extern const char *WIFI_SSID;
 extern const char *WIFI_SENHA;
 
+// =================================================
+// MQTT
+// =================================================
+
+extern const char *MQTT_BROKER;
+
+extern const int MQTT_PORTA;
+
+extern const char *MQTT_CLIENT_ID;
+
+extern const char *MQTT_USUARIO;
+
+extern const char *MQTT_SENHA;
+
+extern const bool MQTT_TLS; // desabiltando segurança
+
+extern const char MQTT_CERTIFICADO_CA[];
+
 extern const char *TOPICOS_PUBLICAR[];
 
 extern const int TOTAL_TOPICOS_PUBLICAR;
@@ -29,7 +47,7 @@ extern const int PINO_HABILITA_DEBUG_COMPLETO;
 // AWS
 // =================================================
 
-extern const bool USAR_AWS_IOT;
+extern const bool USAR_AWS_IOT; //! ISSO NÃO É NOVO, EU ARRASTEI LÁ DE CIMA!
 
 extern const char AWS_CERTIFICADO_CA[];
 
@@ -37,7 +55,7 @@ extern const char AWS_CERTIFICADO_CRT[];
 
 extern const char AWS_CERTIFICADO_PRIVATE[];
 
-extern const char *AWS_IOT_ENDPOINT;
+extern const char *AWS_IOT_ENDPOINT; // ENDEREÇO DO BROKER IOT CORE
 
 extern const int AWS_IOT_PORT;
 
