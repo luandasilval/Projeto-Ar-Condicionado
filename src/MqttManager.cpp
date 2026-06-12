@@ -133,6 +133,7 @@ void configurarMQTT()
     }
 
     mqttClient.setCallback(callbackInternoMQTT); //* Quando chegar mensagem, execute a função "callbackInternoMQTT"
+    mqttClient.setBufferSize(1024);
     debugInfo("Callback interno no MQTT configurado");
 }
 
