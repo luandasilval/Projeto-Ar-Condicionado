@@ -39,9 +39,6 @@ const uint8_t PINO_AC2 = 16;
 int tempAC1 = 24;
 int tempAC2 = 24;
 
-bool powerAC1 = false;
-bool powerAC2 = false;
-
 //*========================================================================================
 //*                           ⇩ ⇩ ⇩      INSTÂNCIAS      ⇩ ⇩ ⇩
 //*========================================================================================
@@ -51,16 +48,17 @@ IRFujitsuAC ac2(PINO_AC2);
 
 enum valoresDosComandos
 {
-    AC_POWER = 0,
-    AC_AUTO_MODE = 1,
-    AC_COOL_MODE = 2,
-    AC_FAN_MODE = 3,
-    AC_FAN_LOW = 4,
-    AC_FAN_MEDIUM = 5,
-    AC_FAN_HIGH = 6,
-    AC_FAN_QUIET = 7,
-    AC_TEMP_DOWN = 8,
-    AC_TEMP_UP = 9
+    AC_POWER_OFF = 0,
+    AC_POWER_ON = 1,
+    AC_AUTO_MODE = 2,
+    AC_COOL_MODE = 3,
+    AC_FAN_MODE = 4,
+    AC_FAN_LOW = 5,
+    AC_FAN_MEDIUM = 6,
+    AC_FAN_HIGH = 7,
+    AC_FAN_QUIET = 8,
+    AC_TEMP_DOWN = 9,
+    AC_TEMP_UP = 10
 };
 
 //*========================================================================================
@@ -74,7 +72,6 @@ void tratarJsonComando(const String &mensagem);
 void publicarErroComHandshake(const String &mensagem);
 
 void publicarSucessoComHandshake(const String &mensagem);
-
 
 //*========================================================================================
 //*                             ⇩ ⇩ ⇩      SETUP      ⇩ ⇩ ⇩
@@ -97,10 +94,6 @@ void setup()
 
     ac1.setModel(ARRAH2E);
     ac2.setModel(ARRAH2E);
-
-    //* Estado inicial do Ar Condicionado  ⇩
-
-    publicarSucessoComHandshake("Controle Fujitsu inicializado");
 
     publicarSucessoComHandshake(ac1.toString().c_str());
 }
@@ -126,12 +119,10 @@ void loop()
 
 void publicarErroComHandshake(const String &mensagem)
 {
-    publicarMensagemNoTopico(0, mensagem.c_str());
- 
     JsonDocument docHandshake;
-    docHandshake["statusComando"]["comando"]  = false;
+    docHandshake["statusComando"]["comando"] = false;
     docHandshake["statusComando"]["situacao"] = mensagem;
- 
+
     String handshakeFormatado;
     serializeJsonPretty(docHandshake, handshakeFormatado);
     publicarMensagemNoTopico(0, handshakeFormatado.c_str());
@@ -139,10 +130,8 @@ void publicarErroComHandshake(const String &mensagem)
 
 void publicarSucessoComHandshake(const String &mensagem)
 {
-    publicarMensagemNoTopico(0, mensagem.c_str());
-
     JsonDocument docHandshake;
-    docHandshake["statusComando"]["comando"]  = true;
+    docHandshake["statusComando"]["comando"] = true;
     docHandshake["statusComando"]["situacao"] = mensagem;
 
     String handshakeFormatado;
@@ -203,8 +192,6 @@ void tratarJsonComando(const String &mensagem)
 
     IRFujitsuAC *acSelecionado = nullptr;
 
-    bool *powerSelecionado = nullptr;
-
     int *tempSelecionado = nullptr;
 
     String nomeAc;
@@ -213,7 +200,6 @@ void tratarJsonComando(const String &mensagem)
     {
         objetoJsonAC = doc["arCondicionado1"];
         acSelecionado = &ac1;
-        powerSelecionado = &powerAC1;
         tempSelecionado = &tempAC1;
         nomeAc = "AC1";
     }
@@ -221,7 +207,6 @@ void tratarJsonComando(const String &mensagem)
     {
         objetoJsonAC = doc["arCondicionado2"];
         acSelecionado = &ac2;
-        powerSelecionado = &powerAC2;
         tempSelecionado = &tempAC2;
         nomeAc = "AC2";
     }
@@ -243,28 +228,13 @@ void tratarJsonComando(const String &mensagem)
     {
         int comando = objetoJsonAC["comando"].as<int>();
 
-        //! mudar o comando AC_POWER
-
-        if (comando == AC_POWER)
+        if (comando == AC_POWER_OFF)
         {
-            *powerSelecionado = !(*powerSelecionado);
-
-            if (*powerSelecionado)
-            {
-                acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
-                acSelecionado->send();
-                publicarSucessoComHandshake("Power: ON");
-            }
-            else
-            {
-                acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
-                acSelecionado->send();
-                publicarSucessoComHandshake("Power: OFF");
-            }
-
+            acSelecionado->setCmd(kFujitsuAcCmdTurnOff);
+            acSelecionado->send();
             alterouEstado = true;
+            publicarSucessoComHandshake("Power: OFF");
         }
-
         else if (comando == AC_AUTO_MODE)
         {
             acSelecionado->setMode(kFujitsuAcModeAuto);
@@ -314,7 +284,6 @@ void tratarJsonComando(const String &mensagem)
             alterouEstado = true;
             publicarSucessoComHandshake("Fan: Quiet");
         }
-
         else if (comando == AC_TEMP_DOWN)
         {
             if (*tempSelecionado > 16)
@@ -330,7 +299,6 @@ void tratarJsonComando(const String &mensagem)
                 publicarErroComHandshake("Limite minimo de temperatura atingido: 16C");
             }
         }
-
         else if (comando == AC_TEMP_UP)
         {
             if (*tempSelecionado < 30)
@@ -346,6 +314,12 @@ void tratarJsonComando(const String &mensagem)
                 publicarErroComHandshake("Limite maximo de temperatura atingido: 30C");
             }
         }
+        else if (comando == AC_POWER_ON)
+        {
+            acSelecionado->setCmd(kFujitsuAcCmdTurnOn);
+            acSelecionado->send();
+            publicarSucessoComHandshake("Power: ON");
+        }
     }
 
     //*========================================================================================
@@ -357,7 +331,7 @@ void tratarJsonComando(const String &mensagem)
     if (alterouEstado)
     {
         //* Status do AC  ⇩
-        publicarMensagemNoTopico(0, acSelecionado->toString().c_str());
+        publicarSucessoComHandshake("Status do Controle: " + *acSelecionado->toString().c_str());
     }
 
     else
@@ -368,17 +342,11 @@ void tratarJsonComando(const String &mensagem)
 
 //*======================================================================================================================================
 
-//* COMANDOS JSON  ⇩⇩
+// COMANDOS JSON  ⇩⇩
 
-/**
- * * {
- * *    "arCondicionadoX": {
- * *       "comando": X
- * *    }
- * * }
- */
+//* {"arCondicionado1":{"comando":10}}
 
-//* HANDSHAKE  ⇩⇩
+// HANDSHAKE  ⇩⇩
 
 /**
  * * {

@@ -6,9 +6,6 @@
 #include "DebugManager.h"
 #include <WiFiClientSecure.h>
 
-//* LED responsável por sinalizar que o ESP está conectado ao WiFi  ⇩
-const uint8_t PINO_LED_WIFI = 46;
-
 void conectarWiFi()
 {
   debugInfo("==============================");
@@ -41,18 +38,12 @@ void conectarWiFi()
     debugInfoSemLinha("Endereço IP:");
     debugInfoSemLinha(WiFi.localIP().toString());
     debugInfoSemLinha("\n\r");
-
-    //* LED
-    digitalWrite(PINO_LED_WIFI, HIGH);
   }
 
   else
   {
     debugErro("Falha ao conectar ao WiFi.");
     debugErro("Verifique o SSID, senha e sinal de rede.");
-
-    //* LED
-    digitalWrite(PINO_LED_WIFI, LOW);
   }
 }
 

@@ -16,6 +16,9 @@ PubSubClient mqttClient;
 
 CallbackMensagemMQTT callbackDaAplicacao = nullptr;
 
+//* LED responsável por sinalizar que o ESP está conectado ao Broker MQTT  ⇩
+const uint8_t PINO_LED_BROKER = 46;
+
 void registrarCallbackMensagem(CallbackMensagemMQTT callback)
 {
     callbackDaAplicacao = callback;
@@ -92,6 +95,9 @@ void configurarMQTT()
 
         debugInfo("Endpoint AWS IoT: " + String(AWS_IOT_ENDPOINT));
         debugInfo("Porta AWS IoT: " + String(AWS_IOT_PORT));
+
+        //* LED responsável por sinalizar que o ESP está conectado ao Broker MQTT  ⇩⇩⇩
+        pinMode(PINO_LED_BROKER, INPUT_PULLUP);
     }
     else if (MQTT_TLS)
     {
@@ -157,6 +163,9 @@ void conectarMQTT()
 
         if (conectado)
         {
+            //* LED responsável por sinalizar que o ESP está conectado ao Broker MQTT  ⇩⇩⇩
+            digitalWrite(PINO_LED_BROKER, HIGH);
+
             debugInfo("MQTT conectado com sucesso.");
 
             int totalTopicos = obterTotalTopicosRecebimento();
@@ -185,6 +194,9 @@ void conectarMQTT()
 
         else
         {
+            //* LED responsável por sinalizar que o ESP está conectado ao Broker MQTT  ⇩⇩⇩
+            digitalWrite(PINO_LED_BROKER, LOW);
+
             debugErro("Falha ao conectar no MQTT. Código de erro: " + String(mqttClient.state()));
             tentativasMQTT++;
             delay(2000);
