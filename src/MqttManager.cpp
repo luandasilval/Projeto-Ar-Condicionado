@@ -97,7 +97,7 @@ void configurarMQTT()
         debugInfo("Porta AWS IoT: " + String(AWS_IOT_PORT));
 
         //* LED responsável por sinalizar que o ESP está conectado ao Broker MQTT  ⇩⇩⇩
-        pinMode(PINO_LED_BROKER, INPUT_PULLUP);
+        pinMode(PINO_LED_BROKER, OUTPUT);
     }
     else if (MQTT_TLS)
     {
