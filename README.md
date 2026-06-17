@@ -12,7 +12,7 @@ Este projeto tem como objetivo automatizar o controle de aparelhos de ar-condici
 - Protoboard (Matriz de Contatos)
 - Cabo Jumper (também conhecido como cabo "Dupont")
 - Resistores de 33Ω (Ohms)
-- Resistor de 330Ω (Ohms)
+- Resistor de 1000Ω (Ohms)
 - LED Infravermelho (TSAL4400)
 - LED DIP
 - Visual Studio Code (Editor de texto)
